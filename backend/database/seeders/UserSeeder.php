@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Admin
-        User::create([
+        User::forceCreate([
             'name'     => 'Admin',
             'email'    => 'admin@learnloop.test',
             'password' => Hash::make('password123'),
@@ -19,14 +19,14 @@ class UserSeeder extends Seeder
         ]);
 
         // Lecturers
-        User::create([
+        User::forceCreate([
             'name'     => 'Dr. Sarah Chen',
             'email'    => 'dr.sarah.chen@learnloop.test',
             'password' => Hash::make('password123'),
             'role'     => 'lecturer',
         ]);
 
-        User::create([
+        User::forceCreate([
             'name'     => 'Prof. James Okafor',
             'email'    => 'prof.james.okafor@learnloop.test',
             'password' => Hash::make('password123'),
@@ -34,21 +34,21 @@ class UserSeeder extends Seeder
         ]);
 
         // Students
-        User::create([
+        User::forceCreate([
             'name'     => 'Alex Morgan',
             'email'    => 'alex.morgan@student.learnloop.test',
             'password' => Hash::make('password123'),
             'role'     => 'student',
         ]);
 
-        User::create([
+        User::forceCreate([
             'name'     => 'Jamie Lee',
             'email'    => 'jamie.lee@student.learnloop.test',
             'password' => Hash::make('password123'),
             'role'     => 'student',
         ]);
 
-        User::create([
+        User::forceCreate([
             'name'     => 'Sam Patel',
             'email'    => 'sam.patel@student.learnloop.test',
             'password' => Hash::make('password123'),

@@ -14,30 +14,43 @@ class ApiSetupTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_register_returns_token_and_role(): void
+    public function test_register_returns_token_and_creates_student(): void
     {
         $response = $this->postJson('/api/auth/register', [
-            'name' => 'Test Lecturer',
-            'email' => 'lecturer@example.test',
+            'name' => 'Test Student',
+            'email' => 'student@example.test',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-            'role' => 'lecturer',
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('user.role', 'lecturer')
+            ->assertJsonPath('user.role', 'student')
             ->assertJsonStructure(['token', 'token_type', 'user']);
     }
 
-    public function test_register_rejects_admin_role(): void
+    public function test_register_ignores_requested_role(): void
     {
-        $this->postJson('/api/auth/register', [
-            'name' => 'Sneaky',
-            'email' => 'sneaky@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'admin',
-        ])->assertUnprocessable();
+        foreach (['lecturer', 'admin'] as $role) {
+            $this->postJson('/api/auth/register', [
+                'name' => 'Sneaky '.$role,
+                'email' => $role.'@example.test',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => $role,
+            ])->assertCreated()
+                ->assertJsonPath('user.role', 'student');
+
+            $this->assertSame('student', User::where('email', $role.'@example.test')->value('role'));
+        }
+    }
+
+    public function test_user_seeder_creates_lecturer_and_admin(): void
+    {
+        $this->seed();
+
+        $this->assertSame('admin', User::where('email', 'admin@learnloop.test')->value('role'));
+        $this->assertSame('lecturer', User::where('email', 'dr.sarah.chen@learnloop.test')->value('role'));
+        $this->assertSame('student', User::where('email', 'alex.morgan@student.learnloop.test')->value('role'));
     }
 
     public function test_role_defaults_to_student(): void

@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['student', 'lecturer', 'admin'])
+            // string, not ENUM: allowed values (student, lecturer, admin) are
+            // enforced in application code (User::ROLES), per AGENTS.md.
+            $table->string('role', 20)
                 ->default('student')
                 ->after('password')
                 ->index();

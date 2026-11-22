@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Route;
 | Authentication: Sanctum personal access tokens (Bearer).
 | Role checks:    ->middleware('role:lecturer,admin')  (alias in bootstrap/app.php)
 |
-| Course/assignment routes are intentionally NOT registered yet: their models
-| do not exist (see setup report). Adaptive-engine routes (v0.8 §8) will be
-| added once Claude's response contracts are merged.
+| Course/assignment routes are intentionally NOT registered: Claude owns the
+| course/topic schema and Canvas supplies assignments (v0.8). Adaptive-engine
+| routes (v0.8 §8) are added once Claude's response contracts are merged.
 */
 
 Route::prefix('auth')->group(function () {

@@ -26,8 +26,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
     ];
+
+    // NOTE: `role` is deliberately NOT mass assignable. Registration must never
+    // let a client choose a role; privileged accounts are created only by
+    // UserSeeder (via forceCreate).
 
     /**
      * The attributes that should be hidden for serialization.

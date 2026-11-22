@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -20,15 +19,18 @@ class AuthController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::min(8)],
-            'role'     => ['required', Rule::in(['student', 'lecturer'])],
         ]);
 
+        // Self-registration always creates a student; any `role` in the request
+        // is ignored. Lecturers/admins come only from UserSeeder.
         $user = User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role'     => $validated['role'],
         ]);
+
+        // The DB default is 'student'; reload so the response includes it.
+        $user->refresh();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
