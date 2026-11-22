@@ -34,6 +34,8 @@ class QuestionBankController extends Controller
             'id' => $t->id,
             'course_id' => $t->course_id,
             'name' => $t->name,
+            'description' => $t->description,
+            'learning_outcomes' => $t->learning_outcomes,
             'status' => $t->status,
         ] + $this->bank->topicSummary($request->user(), $t))->values());
     }

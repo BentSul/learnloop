@@ -37,8 +37,16 @@ return [
     'canvas' => [
         'sync_after_minutes' => 15,
         // fixture = sample data in database/fixtures/canvas (v0.8 §3.1 Tier 3).
+        // token   = the real Canvas REST API, using each user's own access token (Tier 2).
         'adapter' => env('CANVAS_ADAPTER', 'fixture'),
         'fixture_path' => env('CANVAS_FIXTURE_PATH', database_path('fixtures/canvas')),
+        // Your institution's Canvas address, e.g. https://school.instructure.com (no trailing /api).
+        'base_url' => env('CANVAS_BASE_URL'),
+        'timeout_seconds' => (int) env('CANVAS_TIMEOUT', 15),
+        // Course roles are looked up on most requests; cache them to avoid calling Canvas every time.
+        'role_cache_minutes' => (int) env('CANVAS_ROLE_CACHE_MINUTES', 10),
+        // Canvas enrolment types treated as the course's lecturer (v0.8 D12). Add 'TaEnrollment' to include TAs.
+        'teacher_enrollment_types' => ['TeacherEnrollment'],
     ],
 
 ];

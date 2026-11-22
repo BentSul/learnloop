@@ -194,3 +194,27 @@ correct_option_ids: [...]}, explanation}`. Once a question has been used, the ed
 `max_marks`, `question_type` and the options; offer **Regrade** for answer-key corrections.
 Mapping entry: `{canvas_assignment_id, canvas_criterion_id ('' = whole item), topic_id (null = unmap), difficulty}`.
 Never show learners `topic_size`; it is lecturer information only (T2).
+
+## 13. API contract: Canvas connection and topics (for Antigravity)
+
+**Real Canvas.** With `CANVAS_ADAPTER=token` and `CANVAS_BASE_URL=https://<school>.instructure.com`,
+LearnLoop reads Canvas with each user's own access token (`TokenCanvasGateway`). The fixture adapter stays the
+default for development, tests and the demo. An admin adds a real course with
+`php artisan learnloop:link-course <canvas_course_id> --name="…" --code=…` (the ID is the number in
+`/courses/12345`).
+
+| Method and route | Success response |
+|---|---|
+| `GET /api/me/canvas` | 200, `{connected, adapter, canvas_user_id?, connected_at?}` |
+| `POST /api/me/canvas` body `{"access_token": "…"}` | 200, same shape. 422 with `message` if Canvas rejects the token or the Canvas account is linked to another user; 409 when the server is in fixture mode. Rate limited (10/min). |
+| `DELETE /api/me/canvas` | 204. Forgets the token; synced evidence stays. |
+| `POST /api/courses/{courseId}/topics` body `{name, description?, learning_outcomes?: [text]}` | 201, topic in the `GET /api/courses/{id}/topics` item shape |
+| `PATCH /api/topics/{topicId}` any of `{name, description, learning_outcomes, status: active\|archived}` | 200, same shape |
+
+Screens: a **Canvas connection** page (any user) with a password-type input for the token, short instructions
+(Canvas → Account → Settings → **+ New Access Token**), connection status and a Disconnect button. Never store
+the token in the browser and never display it after submitting. Show the `adapter` value only as a small note
+("Demo data mode") when it is `fixture`. In Lecturer Tools: **Add topic**, **Rename/edit** and **Archive/Restore**.
+
+Canvas failures: 502 `CanvasUnavailable` (Canvas down) and 409 `CanvasNotConnected` (token expired → link to the
+Canvas connection page). Both have a `message` to display.

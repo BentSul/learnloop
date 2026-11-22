@@ -2,12 +2,14 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Learner\AttemptController;
+use App\Http\Controllers\Api\Learner\CanvasConnectionController;
 use App\Http\Controllers\Api\Learner\CourseController;
 use App\Http\Controllers\Api\Learner\GoalController;
 use App\Http\Controllers\Api\Learner\RecommendationController;
 use App\Http\Controllers\Api\Lecturer\CanvasMappingController;
 use App\Http\Controllers\Api\Lecturer\ClassOverviewController;
 use App\Http\Controllers\Api\Lecturer\QuestionBankController;
+use App\Http\Controllers\Api\Lecturer\TopicController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +35,11 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Canvas account link (any signed-in user)
+    Route::get('me/canvas', [CanvasConnectionController::class, 'show']);
+    Route::post('me/canvas', [CanvasConnectionController::class, 'store'])->middleware('throttle:10,1');
+    Route::delete('me/canvas', [CanvasConnectionController::class, 'destroy']);
+
     // Learner (§9–§11)
     Route::prefix('me')->group(function () {
         Route::get('courses', [CourseController::class, 'index']);
@@ -63,6 +70,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Lecturer (§12) — the services check the Canvas teacher role per course
     Route::get('courses/{course}/topics', [QuestionBankController::class, 'topics']);
+    Route::post('courses/{course}/topics', [TopicController::class, 'store']);
+    Route::patch('topics/{topic}', [TopicController::class, 'update']);
     Route::get('topics/{topic}/questions', [QuestionBankController::class, 'index']);
     Route::post('topics/{topic}/questions', [QuestionBankController::class, 'store']);
     Route::post('topics/{topic}/questions/import', [QuestionBankController::class, 'import']);
