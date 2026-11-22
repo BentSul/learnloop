@@ -7,6 +7,8 @@ import { GuestOnly, RequireAuth } from './auth/guards';
 import Layout from './components/Layout';
 import CourseDetail from './pages/CourseDetail';
 import Dashboard from './pages/Dashboard';
+import LecturerHub from './pages/LecturerHub';
+import LecturerLearnerDetail from './pages/LecturerLearnerDetail';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import QuizPlayer from './pages/QuizPlayer';
@@ -29,6 +31,12 @@ function App() {
                             <Route path="/courses/:courseId" element={<CourseDetail />} />
                             <Route path="/attempts/:attemptId" element={<QuizPlayer />} />
                             <Route path="/recommendations" element={<Recommendations />} />
+                            <Route path="/lecturer" element={<LecturerHub />} />
+                            <Route path="/lecturer/courses/:courseId" element={<LecturerHub />} />
+                            <Route
+                                path="/lecturer/courses/:courseId/learners/:learnerId"
+                                element={<LecturerLearnerDetail />}
+                            />
                         </Route>
                     </Route>
 
