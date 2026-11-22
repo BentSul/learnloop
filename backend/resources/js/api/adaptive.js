@@ -1,22 +1,24 @@
 import client from './client';
 import { mockStore } from './mockData';
 
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
+
 /**
  * Checks if an Axios 404 is because the Laravel route has not been registered yet
- * ("The route api/... could not be found."). Domain 404s (e.g. "Not found." from
- * AttemptNotFound or LecturerException) are rethrown so the UI shows real errors.
+ * ("The route api/... could not be found."). Domain 404s (including an empty 404 body)
+ * are always rethrown so the UI shows real errors.
  */
 function isUnmergedRouteError(error) {
     if (error?.response?.status !== 404) return false;
     const msg = String(error?.response?.data?.message ?? '');
-    return msg.includes('could not be found') || msg === '';
+    return msg.includes('could not be found');
 }
 
 async function callWithMockFallback(requestFn, fallbackFn) {
     try {
         return await requestFn();
     } catch (error) {
-        if (isUnmergedRouteError(error)) {
+        if (USE_MOCKS && isUnmergedRouteError(error)) {
             mockStore.markUsed();
             return fallbackFn();
         }
