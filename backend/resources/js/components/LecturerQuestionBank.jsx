@@ -350,7 +350,7 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
                                 Question Bank: {selectedTopic.name ?? selectedTopic.topic_name}
                             </h2>
                             <p className="text-xs text-slate-500">
-                                Topic size: <strong>{selectedTopic.topic_size} marks</strong> (lecturer-only metric, never coverage denominator — T2).
+                                Topic size: <strong>{selectedTopic.topic_size} marks</strong> — total marks of active questions in this topic.
                             </p>
                         </div>
 

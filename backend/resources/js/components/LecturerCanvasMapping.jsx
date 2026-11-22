@@ -93,7 +93,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
             setItems(list);
             hydrateDrafts(list);
             setFeedback(
-                'Canvas mappings saved. Learners’ evidence will be re-derived with the updated topic and difficulty on their next sync (D13).',
+                'Canvas mappings saved. Learners’ evidence will be updated on their next sync.',
             );
         } catch (err) {
             const data = err?.response?.data;
@@ -121,7 +121,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                     </h2>
                     <p className="text-xs text-slate-500">
                         Map each Canvas item either as a whole to one topic, or map individual
-                        rubric criteria to topics. Default difficulty is Medium (D10).
+                        rubric criteria to topics. Default difficulty is Medium.
                     </p>
                 </div>
 
