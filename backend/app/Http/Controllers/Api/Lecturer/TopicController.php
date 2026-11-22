@@ -9,6 +9,7 @@ use App\Services\Adaptive\Lecturer\QuestionBankService;
 use App\Services\Adaptive\Lecturer\TopicService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /** Lecturers create, rename and archive the topics of their course. */
 class TopicController extends Controller
@@ -29,6 +30,13 @@ class TopicController extends Controller
     public function update(Request $request, Topic $topic): JsonResponse
     {
         return response()->json($this->present($request, $this->topics->update($request->user(), $topic, $request->all())));
+    }
+
+    public function destroy(Request $request, Topic $topic): Response
+    {
+        $this->topics->delete($request->user(), $topic);
+
+        return response()->noContent();
     }
 
     /** @return array<string, mixed> same shape as GET /api/courses/{course}/topics items */

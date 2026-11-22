@@ -25,6 +25,12 @@ class LecturerException extends QuizException
         return new self($message, 422, $errors);
     }
 
+    /** The action is not allowed in the current state (409). */
+    public static function conflict(string $message): self
+    {
+        return new self($message, 409);
+    }
+
     public function status(): int
     {
         return $this->httpStatus;

@@ -51,10 +51,12 @@ class CanvasConnectionService
         }
 
         $canvasUserId = (string) $self['id'];
-        $owner = CanvasConnection::where('canvas_user_id', $canvasUserId)->where('user_id', '!=', $user->id)->first();
-        if ($owner !== null) {
-            throw LecturerException::invalid('This Canvas account is already linked to another LearnLoop account.');
+        $other = CanvasConnection::where('canvas_user_id', $canvasUserId)->where('user_id', '!=', $user->id)->first();
+        if ($other !== null && $other->revoked_at === null) {
+            throw LecturerException::invalid('This Canvas account is already linked to another LearnLoop account. Disconnect Canvas in that account first.');
         }
+        // A disconnected link no longer owns the Canvas account; free it for this user.
+        $other?->delete();
 
         CanvasConnection::updateOrCreate(['user_id' => $user->id], [
             'canvas_user_id' => $canvasUserId,
