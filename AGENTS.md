@@ -75,8 +75,17 @@ At the end of each task, report:
 
 | Task | Owner | Branch | Status |
 |---|---|---|---|
-| Project setup (git baseline done; Sanctum, API routes, roles, React plan, DB version) | Antigravity | `setup` | In progress |
-| Calculation core: performance, status, display, coverage, difficulty, confidence, conflicts, recency | Claude | `engine-core` | Ready for review |
-| Evidence assembly + database tables for evidence | Claude | after `setup` merges | Not started |
-| Canvas fixture adapter + sample data | Claude | after `setup` merges | Not started |
-| React app scaffold | Antigravity | `frontend` | Not started |
+| Project setup: Sanctum, API routes, roles, MariaDB | Antigravity | `setup` | Merged |
+| Calculation core: performance, status, display, coverage, difficulty, confidence, conflicts, recency | Claude | `engine-core` | Merged |
+| Adaptive schema (courses, topics, questions, assessments, attempts, answers, mark versions, Canvas mappings, external results) + evidence assembly | Claude | `adaptive-schema` | Ready for review |
+| React app scaffold | Antigravity | `frontend` | In progress |
+| Practice quiz service: start attempt (freeze items), autosave, submit, auto-mark | Claude | next | Not started |
+| Canvas fixture adapter + sample data seeders | Claude | next | Not started |
+| Recommendation engine and reconciliation | Claude | later | Not started |
+
+**Environment facts:** MariaDB 12.2.2 (database `learnloop`, user `learnloop`). PHP 8.2. Laravel 12.72. Tests run on in-memory SQLite (`phpunit.xml`); never point tests at the real database.
+
+**Schema notes for the API/UI:**
+- `questions.answer_data` and `attempt_items.marking_snapshot` are hidden on serialisation; learner endpoints must never expose them.
+- One in-progress attempt per learner and assessment is enforced by the generated `attempts.active_key` column: catch the unique-constraint error and return 409.
+- Use `App\Services\Adaptive\Evidence\EvidenceAssembler` + `App\Services\Adaptive\Calculation\TopicAssessor` to get a topic's results; do not query marks directly in controllers.
