@@ -18,6 +18,9 @@ export const createCourseTopic = (courseId, body) =>
 export const updateCourseTopic = (topicId, body) =>
     client.patch(`/topics/${topicId}`, body).then((r) => r.data);
 
+export const deleteCourseTopic = (topicId) =>
+    client.delete(`/topics/${topicId}`).then((r) => r.data);
+
 // ============================================================================
 // §10 Courses, topic performance and Canvas sync
 // ============================================================================

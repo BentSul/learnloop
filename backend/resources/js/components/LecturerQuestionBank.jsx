@@ -3,6 +3,7 @@ import {
     archiveQuestion,
     createCourseTopic,
     createTopicQuestion,
+    deleteCourseTopic,
     fetchTopicQuestions,
     importKlenamQuestions,
     regradeQuestion,
@@ -50,6 +51,9 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
     });
     const [savingTopic, setSavingTopic] = useState(false);
     const [togglingTopicId, setTogglingTopicId] = useState(null);
+    const [deleteTargetTopic, setDeleteTargetTopic] = useState(null);
+    const [deleteConflictMessage, setDeleteConflictMessage] = useState(null);
+    const [deletingTopic, setDeletingTopic] = useState(false);
 
     // Question Create / Edit modal state
     const [editingQuestion, setEditingQuestion] = useState(null); // null = closed, 'new' or question object
@@ -193,6 +197,69 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
             setErrorList(Array.isArray(data?.errors) ? data.errors : []);
         } finally {
             setTogglingTopicId(null);
+        }
+    };
+
+    const openDeleteTopicDialog = (topic, e) => {
+        e?.stopPropagation();
+        setDeleteTargetTopic(topic);
+        setDeleteConflictMessage(null);
+    };
+
+    const handleConfirmDeleteTopic = async () => {
+        if (!deleteTargetTopic) return;
+        setDeletingTopic(true);
+        setError(null);
+        setErrorList([]);
+        setFeedback(null);
+        try {
+            const deletedName = deleteTargetTopic.name ?? deleteTargetTopic.topic_name;
+            const deletedId = deleteTargetTopic.id;
+            await deleteCourseTopic(deletedId);
+            setDeleteTargetTopic(null);
+            setDeleteConflictMessage(null);
+            setFeedback(`Topic "${deletedName}" deleted.`);
+            if (Number(selectedTopicId) === Number(deletedId)) {
+                setSelectedTopicId(null);
+            }
+            await onTopicsChanged?.();
+        } catch (err) {
+            if (err?.response?.status === 409) {
+                setDeleteConflictMessage(
+                    err?.response?.data?.message ??
+                        'Students already have results for this topic, so it can only be archived.',
+                );
+            } else {
+                const data = err?.response?.data;
+                setError(data?.message ?? parseApiError(err).message);
+                setErrorList(Array.isArray(data?.errors) ? data.errors : []);
+                setDeleteTargetTopic(null);
+            }
+        } finally {
+            setDeletingTopic(false);
+        }
+    };
+
+    const handleArchiveInsteadOfDelete = async () => {
+        if (!deleteTargetTopic) return;
+        setDeletingTopic(true);
+        setError(null);
+        setErrorList([]);
+        setFeedback(null);
+        try {
+            const updated = await updateCourseTopic(deleteTargetTopic.id, { status: 'archived' });
+            setDeleteTargetTopic(null);
+            setDeleteConflictMessage(null);
+            setFeedback(
+                `Topic "${updated.name}" archived. It is hidden from learners while their history is kept.`,
+            );
+            await onTopicsChanged?.();
+        } catch (err) {
+            const data = err?.response?.data;
+            setError(data?.message ?? parseApiError(err).message);
+            setErrorList(Array.isArray(data?.errors) ? data.errors : []);
+        } finally {
+            setDeletingTopic(false);
         }
     };
 
@@ -476,7 +543,7 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                         className={`rounded-md border px-2.5 py-1 text-xs font-medium disabled:opacity-60 ${
                                             isArchived
                                                 ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                                                : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
                                         }`}
                                     >
                                         {togglingTopicId === t.id
@@ -484,6 +551,13 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                             : isArchived
                                               ? 'Restore'
                                               : 'Archive'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => openDeleteTopicDialog(t, e)}
+                                        className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                                    >
+                                        Delete
                                     </button>
                                 </div>
                             </div>
@@ -547,6 +621,27 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                             >
                                 Edit topic
+                            </button>
+                            <button
+                                type="button"
+                                disabled={togglingTopicId === selectedTopic.id}
+                                onClick={(e) => handleToggleTopicArchive(selectedTopic, e)}
+                                className={`rounded-md border px-3 py-2 text-xs font-medium disabled:opacity-60 ${
+                                    selectedTopic.status === 'archived'
+                                        ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                        : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                }`}
+                            >
+                                {selectedTopic.status === 'archived'
+                                    ? 'Restore topic'
+                                    : 'Archive topic'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => openDeleteTopicDialog(selectedTopic, e)}
+                                className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                            >
+                                Delete topic
                             </button>
                             <button
                                 type="button"
@@ -747,6 +842,83 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                             })}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Delete Topic Confirmation & 409 Archive Fallback Modal (§13) */}
+            {deleteTargetTopic && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                    <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            {deleteConflictMessage
+                                ? 'Cannot Delete Topic'
+                                : `Delete "${deleteTargetTopic.name ?? deleteTargetTopic.topic_name}"?`}
+                        </h2>
+
+                        {deleteConflictMessage ? (
+                            <div className="mt-3 space-y-3">
+                                <p
+                                    role="alert"
+                                    className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+                                >
+                                    {deleteConflictMessage}
+                                </p>
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        disabled={deletingTopic}
+                                        onClick={() => {
+                                            setDeleteTargetTopic(null);
+                                            setDeleteConflictMessage(null);
+                                        }}
+                                        className="rounded-md border border-slate-300 px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Close
+                                    </button>
+                                    {deleteTargetTopic.status !== 'archived' && (
+                                        <button
+                                            type="button"
+                                            disabled={deletingTopic}
+                                            onClick={handleArchiveInsteadOfDelete}
+                                            className="rounded-md bg-amber-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+                                        >
+                                            {deletingTopic ? 'Archiving…' : 'Archive instead'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-2 space-y-4">
+                                <p className="text-xs text-slate-600">
+                                    Are you sure you want to permanently delete{' '}
+                                    <strong>
+                                        {deleteTargetTopic.name ?? deleteTargetTopic.topic_name}
+                                    </strong>
+                                    ? Its unused questions and Canvas mappings will also be removed.
+                                    If students already have results for this topic, you will be
+                                    offered the option to archive it instead.
+                                </p>
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        disabled={deletingTopic}
+                                        onClick={() => setDeleteTargetTopic(null)}
+                                        className="rounded-md border border-slate-300 px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={deletingTopic}
+                                        onClick={handleConfirmDeleteTopic}
+                                        className="rounded-md bg-rose-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                                    >
+                                        {deletingTopic ? 'Deleting…' : 'Delete topic'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
