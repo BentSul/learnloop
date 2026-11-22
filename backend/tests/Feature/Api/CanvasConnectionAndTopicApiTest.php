@@ -62,8 +62,32 @@ class CanvasConnectionAndTopicApiTest extends TestCase
         $this->postJson('/api/me/canvas', ['access_token' => self::TOKEN])->assertUnprocessable()
             ->assertJsonFragment(['message' => 'Canvas did not accept this token. Check that you copied all of it and that it has not expired.']);
         $this->postJson('/api/me/canvas', ['access_token' => self::TOKEN])->assertUnprocessable()
-            ->assertJsonFragment(['message' => 'This Canvas account is already linked to another LearnLoop account.']);
+            ->assertJsonFragment(['message' => 'This Canvas account is already linked to another LearnLoop account. Disconnect Canvas in that account first.']);
         $this->postJson('/api/me/canvas', ['access_token' => 'short'])->assertUnprocessable();
+    }
+
+    public function test_a_disconnected_canvas_account_can_be_linked_to_another_learnloop_account(): void
+    {
+        $this->tokenMode();
+        Http::fake([self::BASE.'/api/v1/users/self' => Http::response(['id' => 4242])]);
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+
+        Sanctum::actingAs($first);
+        $this->postJson('/api/me/canvas', ['access_token' => self::TOKEN])->assertOk();
+
+        Sanctum::actingAs($second);
+        $this->postJson('/api/me/canvas', ['access_token' => self::TOKEN])->assertUnprocessable();
+
+        Sanctum::actingAs($first);
+        $this->deleteJson('/api/me/canvas')->assertNoContent();
+
+        Sanctum::actingAs($second);
+        $this->postJson('/api/me/canvas', ['access_token' => self::TOKEN])->assertOk()->assertJson(['connected' => true]);
+        $this->assertSame($second->id, CanvasConnection::where('canvas_user_id', '4242')->sole()->user_id);
+
+        Sanctum::actingAs($first);
+        $this->getJson('/api/me/canvas')->assertJson(['connected' => false]);
     }
 
     public function test_connect_is_refused_in_fixture_mode(): void
@@ -96,6 +120,31 @@ class CanvasConnectionAndTopicApiTest extends TestCase
         $this->assertNotContains('Web accessibility', $names, 'archived topics are hidden from learners');
         $this->postJson("/api/courses/{$course->id}/topics", ['name' => 'Sneaky'])->assertNotFound();
         $this->patchJson("/api/topics/{$topic['id']}", ['status' => 'active'])->assertNotFound();
+    }
+
+    public function test_topics_without_evidence_can_be_deleted_others_only_archived(): void
+    {
+        $this->seed();
+        $course = Course::where('code', 'WT101')->firstOrFail();
+        Sanctum::actingAs(User::where('email', 'dr.sarah.chen@learnloop.test')->firstOrFail());
+
+        $topic = $this->postJson("/api/courses/{$course->id}/topics", ['name' => 'Typo topic'])->assertCreated()->json('id');
+        $this->postJson("/api/topics/{$topic}/questions", [
+            'question_type' => 'mcq', 'question_text' => 'Unused?', 'difficulty' => 'easy', 'max_marks' => 1,
+            'answer_data' => ['options' => [['id' => 'a', 'text' => 'Yes'], ['id' => 'b', 'text' => 'No']], 'correct_option_ids' => ['a']],
+        ])->assertCreated();
+
+        $this->deleteJson("/api/topics/{$topic}")->assertNoContent();
+        $this->assertDatabaseMissing('topics', ['id' => $topic]);
+        $this->assertDatabaseMissing('questions', ['question_text' => 'Unused?']);
+
+        $withEvidence = $course->topics()->orderBy('id')->firstOrFail();
+        $this->deleteJson("/api/topics/{$withEvidence->id}")->assertStatus(409)
+            ->assertJsonFragment(['message' => 'Students already have results for this topic, so it can only be archived. Archiving hides it and keeps their history.']);
+        $this->assertDatabaseHas('topics', ['id' => $withEvidence->id]);
+
+        Sanctum::actingAs(User::where('email', 'jamie.lee@student.learnloop.test')->firstOrFail());
+        $this->deleteJson("/api/topics/{$withEvidence->id}")->assertNotFound();
     }
 
     public function test_link_course_command(): void

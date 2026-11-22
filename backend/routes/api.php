@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('courses/{course}/topics', [QuestionBankController::class, 'topics']);
     Route::post('courses/{course}/topics', [TopicController::class, 'store']);
     Route::patch('topics/{topic}', [TopicController::class, 'update']);
+    Route::delete('topics/{topic}', [TopicController::class, 'destroy']);
     Route::get('topics/{topic}/questions', [QuestionBankController::class, 'index']);
     Route::post('topics/{topic}/questions', [QuestionBankController::class, 'store']);
     Route::post('topics/{topic}/questions/import', [QuestionBankController::class, 'import']);
