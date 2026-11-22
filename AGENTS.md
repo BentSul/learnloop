@@ -79,7 +79,8 @@ At the end of each task, report:
 | Calculation core: performance, status, display, coverage, difficulty, confidence, conflicts, recency | Claude | `engine-core` | Merged |
 | Adaptive schema (courses, topics, questions, assessments, attempts, answers, mark versions, Canvas mappings, external results) + evidence assembly | Claude | `adaptive-schema` | Ready for review |
 | React app scaffold | Antigravity | `frontend` | In progress |
-| Practice quiz service: start attempt (freeze items), autosave, submit, auto-mark | Claude | next | Not started |
+| Practice quiz service: start attempt (freeze items), autosave, submit, auto-mark | Claude | `practice-quiz` | Ready for review |
+| Practice quiz API controllers + routes (contract below) | Antigravity | after `practice-quiz` merges | Not started |
 | Canvas fixture adapter + sample data seeders | Claude | next | Not started |
 | Recommendation engine and reconciliation | Claude | later | Not started |
 
@@ -89,3 +90,25 @@ At the end of each task, report:
 - `questions.answer_data` and `attempt_items.marking_snapshot` are hidden on serialisation; learner endpoints must never expose them.
 - One in-progress attempt per learner and assessment is enforced by the generated `attempts.active_key` column: catch the unique-constraint error and return 409.
 - Use `App\Services\Adaptive\Evidence\EvidenceAssembler` + `App\Services\Adaptive\Calculation\TopicAssessor` to get a topic's results; do not query marks directly in controllers.
+
+## 9. API contract: practice quizzes (for Antigravity)
+
+Controllers stay thin: call `App\Services\Adaptive\Quiz\AttemptService` and return its output. Its exceptions
+(`App\Services\Adaptive\Quiz\Exceptions\*`) render their own JSON and status codes, so do not catch them.
+All routes use `auth:sanctum`. Never use route-model binding for attempts; load them with
+`AttemptService::findForLearner($request->user(), $id)` (other learners get 404).
+
+| Method and route | Service call | Success response |
+|---|---|---|
+| `POST /api/me/assessments/{assessmentId}/attempts` | `start($user, $assessment)` | 201, `LearnerAttemptView::make($attempt)` |
+| `GET /api/me/attempts/{attemptId}` | `findForLearner($user, $id)` | 200, `LearnerAttemptView::make($attempt)` |
+| `PUT /api/me/attempts/{attemptId}/answers/{questionId}` body `{"option_ids": ["a"]}` | `saveAnswer($user, $attempt, $questionId, $body)` | 200, `{"saved": true}` |
+| `POST /api/me/attempts/{attemptId}/submit` body `{"confirm_unanswered": bool}` | `submit($user, $attempt, $confirm)` | 200, `$result->toLearnerArray()` |
+
+Errors returned by the service: 404 not yours / hidden revision quiz; 409 attempt already in progress
+(`attempt_id` included), already submitted, quiz closed; 422 invalid answer, unusable quiz, or
+`{"unanswered": n, "requires_confirmation": true}` — show SubmitAttemptDialog and resend with
+`confirm_unanswered: true`.
+
+`LearnerAttemptView` and `toLearnerArray()` never contain answer keys. Do not add fields from
+`questions.answer_data` or `attempt_items.marking_snapshot` to any learner response.

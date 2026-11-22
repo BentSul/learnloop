@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Question extends Model
 {
+    protected $attributes = ['status' => 'active', 'source' => 'learnloop', 'difficulty' => 'medium'];
+
     protected $fillable = [
         'topic_id', 'question_type', 'question_text', 'difficulty', 'max_marks',
         'answer_data', 'explanation', 'source', 'status', 'created_by',

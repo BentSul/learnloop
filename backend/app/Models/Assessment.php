@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /** A LearnLoop practice set or learner revision quiz (v0.8 §5). */
 class Assessment extends Model
 {
+    protected $attributes = ['status' => 'open'];
+
     protected $fillable = [
         'course_id', 'assessment_type', 'owner_learner_id', 'topic_id', 'title', 'status', 'created_by',
     ];
