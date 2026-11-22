@@ -6,6 +6,7 @@ use App\Enums\Adaptive\Difficulty;
 use App\Enums\Adaptive\QuestionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Question bank entry (spec §3.2). answer_data holds the answer key and must never be
@@ -35,5 +36,10 @@ class Question extends Model
     public function topic(): BelongsTo
     {
         return $this->belongsTo(Topic::class);
+    }
+
+    public function attemptItems(): HasMany
+    {
+        return $this->hasMany(AttemptItem::class);
     }
 }
