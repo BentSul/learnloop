@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
     archiveQuestion,
+    createCourseTopic,
     createTopicQuestion,
     fetchTopicQuestions,
     importKlenamQuestions,
     regradeQuestion,
+    updateCourseTopic,
     updateQuestion,
 } from '../api/adaptive';
 import { parseApiError } from '../api/client';
@@ -31,7 +33,7 @@ function isQuestionUsed(question) {
     );
 }
 
-export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
+export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged }) {
     const [selectedTopicId, setSelectedTopicId] = useState(() => topics[0]?.id ?? null);
     const [questions, setQuestions] = useState([]);
     const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -39,7 +41,17 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
     const [errorList, setErrorList] = useState([]);
     const [feedback, setFeedback] = useState(null);
 
-    // Create / Edit modal state
+    // Topic Create / Edit modal state (AGENTS.md §13)
+    const [editingTopic, setEditingTopic] = useState(null); // null = closed, 'new' or topic object
+    const [topicForm, setTopicForm] = useState({
+        name: '',
+        description: '',
+        learning_outcomes_text: '',
+    });
+    const [savingTopic, setSavingTopic] = useState(false);
+    const [togglingTopicId, setTogglingTopicId] = useState(null);
+
+    // Question Create / Edit modal state
     const [editingQuestion, setEditingQuestion] = useState(null); // null = closed, 'new' or question object
     const [forceLockedUsed, setForceLockedUsed] = useState(false);
     const [form, setForm] = useState({
@@ -66,7 +78,7 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
     const [importReport, setImportReport] = useState(null);
 
     useEffect(() => {
-        if (!selectedTopicId && topics.length > 0) {
+        if (topics.length > 0 && !topics.some((t) => Number(t.id) === Number(selectedTopicId))) {
             setSelectedTopicId(topics[0].id);
         }
     }, [topics, selectedTopicId]);
@@ -94,6 +106,97 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
     }, [selectedTopicId, loadQuestions]);
 
     const selectedTopic = topics.find((t) => Number(t.id) === Number(selectedTopicId)) ?? null;
+
+    // ------------------------------------------------------------------ Topics (§13)
+
+    const openCreateTopicModal = () => {
+        setEditingTopic('new');
+        setTopicForm({
+            name: '',
+            description: '',
+            learning_outcomes_text: '',
+        });
+    };
+
+    const openEditTopicModal = (topic, e) => {
+        e?.stopPropagation();
+        setEditingTopic(topic);
+        setTopicForm({
+            name: topic.name ?? topic.topic_name ?? '',
+            description: topic.description ?? '',
+            learning_outcomes_text: Array.isArray(topic.learning_outcomes)
+                ? topic.learning_outcomes.join('\n')
+                : '',
+        });
+    };
+
+    const handleSaveTopic = async (e) => {
+        e.preventDefault();
+        setSavingTopic(true);
+        setError(null);
+        setErrorList([]);
+        setFeedback(null);
+
+        const outcomes = topicForm.learning_outcomes_text
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line !== '');
+
+        const payload = {
+            name: topicForm.name.trim(),
+            description: topicForm.description.trim() || null,
+            learning_outcomes: outcomes.length > 0 ? outcomes : null,
+        };
+
+        try {
+            if (editingTopic === 'new') {
+                const created = await createCourseTopic(courseId, payload);
+                setFeedback(`Topic "${created.name}" created.`);
+                setEditingTopic(null);
+                await onTopicsChanged?.();
+                if (created?.id) {
+                    setSelectedTopicId(created.id);
+                }
+            } else {
+                const updated = await updateCourseTopic(editingTopic.id, payload);
+                setFeedback(`Topic "${updated.name}" updated.`);
+                setEditingTopic(null);
+                await onTopicsChanged?.();
+            }
+        } catch (err) {
+            const data = err?.response?.data;
+            setError(data?.message ?? parseApiError(err).message);
+            setErrorList(Array.isArray(data?.errors) ? data.errors : []);
+        } finally {
+            setSavingTopic(false);
+        }
+    };
+
+    const handleToggleTopicArchive = async (topic, e) => {
+        e?.stopPropagation();
+        const nextStatus = topic.status === 'archived' ? 'active' : 'archived';
+        setTogglingTopicId(topic.id);
+        setError(null);
+        setErrorList([]);
+        setFeedback(null);
+        try {
+            const updated = await updateCourseTopic(topic.id, { status: nextStatus });
+            setFeedback(
+                updated.status === 'archived'
+                    ? `Topic "${updated.name}" archived. It is hidden from learners while its evidence is retained.`
+                    : `Topic "${updated.name}" restored to active.`,
+            );
+            await onTopicsChanged?.();
+        } catch (err) {
+            const data = err?.response?.data;
+            setError(data?.message ?? parseApiError(err).message);
+            setErrorList(Array.isArray(data?.errors) ? data.errors : []);
+        } finally {
+            setTogglingTopicId(null);
+        }
+    };
+
+    // ------------------------------------------------------------------ Questions (§12)
 
     const openCreateModal = () => {
         setEditingQuestion('new');
@@ -167,8 +270,6 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
                 await createTopicQuestion(selectedTopicId, payload);
                 setFeedback('Question created.');
             } else {
-                // Once a question has been used, max_marks, question_type and options are disabled
-                // and omitted from the PATCH body (AGENTS.md §12, QuestionBankService::update).
                 const payload = forceLockedUsed
                     ? {
                           question_text: form.question_text,
@@ -197,7 +298,6 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
             const errs = Array.isArray(data?.errors) ? data.errors : [];
             setError(data?.message ?? parseApiError(err).message);
             setErrorList(errs);
-            // If backend reported that the question has been used, lock those fields and offer Regrade
             if (errs.some((msg) => String(msg).includes('has been used'))) {
                 setForceLockedUsed(true);
             }
@@ -280,47 +380,117 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
 
     return (
         <div className="space-y-6">
-            {/* Topic selector cards with lecturer-only topic_size, active_questions & warnings (§3.5, §3.6, T2) */}
-            <div className="grid gap-4 sm:grid-cols-2">
-                {topics.map((t) => {
-                    const isSelected = Number(t.id) === Number(selectedTopicId);
-                    return (
-                        <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setSelectedTopicId(t.id)}
-                            className={`flex flex-col justify-between rounded-xl border p-4 text-left shadow-sm transition ${
-                                isSelected
-                                    ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600'
-                                    : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div>
-                                <div className="flex items-center justify-between gap-2">
-                                    <h3 className="text-base font-semibold text-slate-900">
-                                        {t.name ?? t.topic_name}
-                                    </h3>
-                                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                                        Topic size: {t.topic_size} marks
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    {t.active_questions} active{' '}
-                                    {t.active_questions === 1 ? 'question' : 'questions'} in bank
-                                </p>
-                            </div>
-
-                            {Array.isArray(t.warnings) && t.warnings.length > 0 && (
-                                <ul className="mt-3 space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">
-                                    {t.warnings.map((w, idx) => (
-                                        <li key={idx}>⚠ {w}</li>
-                                    ))}
-                                </ul>
-                            )}
-                        </button>
-                    );
-                })}
+            {/* Course topics header with + Add Topic button */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Course Topics</h2>
+                    <p className="text-xs text-slate-500">
+                        Select a topic to manage its question bank, or add, edit, archive, and
+                        restore topics.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={openCreateTopicModal}
+                    className="rounded-md bg-indigo-600 px-3.5 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                >
+                    + Add topic
+                </button>
             </div>
+
+            {/* Topic selector cards */}
+            {topics.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                    No topics in this course yet. Click <strong>+ Add topic</strong> to create one.
+                </div>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {topics.map((t) => {
+                        const isSelected = Number(t.id) === Number(selectedTopicId);
+                        const isArchived = t.status === 'archived';
+                        return (
+                            <div
+                                key={t.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setSelectedTopicId(t.id)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setSelectedTopicId(t.id);
+                                    }
+                                }}
+                                className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 text-left shadow-sm transition ${
+                                    isSelected
+                                        ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600'
+                                        : 'border-slate-200 bg-white hover:border-slate-300'
+                                } ${isArchived ? 'opacity-70' : ''}`}
+                            >
+                                <div>
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h3 className="text-base font-semibold text-slate-900">
+                                                {t.name ?? t.topic_name}
+                                            </h3>
+                                            {isArchived && (
+                                                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
+                                                    Archived
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                            Topic size: {t.topic_size} marks
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {t.active_questions} active{' '}
+                                        {t.active_questions === 1 ? 'question' : 'questions'} in bank
+                                    </p>
+                                    {t.description && (
+                                        <p className="mt-1.5 text-xs text-slate-600">
+                                            {t.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {Array.isArray(t.warnings) && t.warnings.length > 0 && (
+                                    <ul className="mt-3 space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">
+                                        {t.warnings.map((w, idx) => (
+                                            <li key={idx}>⚠ {w}</li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => openEditTopicModal(t, e)}
+                                        className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={togglingTopicId === t.id}
+                                        onClick={(e) => handleToggleTopicArchive(t, e)}
+                                        className={`rounded-md border px-2.5 py-1 text-xs font-medium disabled:opacity-60 ${
+                                            isArchived
+                                                ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                        }`}
+                                    >
+                                        {togglingTopicId === t.id
+                                            ? 'Saving…'
+                                            : isArchived
+                                              ? 'Restore'
+                                              : 'Archive'}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {feedback && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
@@ -346,21 +516,46 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
                     {/* Header & Klenam Import bar */}
                     <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                Question Bank: {selectedTopic.name ?? selectedTopic.topic_name}
-                            </h2>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h2 className="text-lg font-semibold text-slate-900">
+                                    Question Bank: {selectedTopic.name ?? selectedTopic.topic_name}
+                                </h2>
+                                {selectedTopic.status === 'archived' && (
+                                    <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800">
+                                        Archived
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-xs text-slate-500">
-                                Topic size: <strong>{selectedTopic.topic_size} marks</strong> — total marks of active questions in this topic.
+                                Topic size: <strong>{selectedTopic.topic_size} marks</strong> — total
+                                marks of active questions in this topic.
                             </p>
+                            {Array.isArray(selectedTopic.learning_outcomes) &&
+                                selectedTopic.learning_outcomes.length > 0 && (
+                                    <ul className="mt-2 list-inside list-disc text-xs text-slate-600">
+                                        {selectedTopic.learning_outcomes.map((outcome, idx) => (
+                                            <li key={idx}>{outcome}</li>
+                                        ))}
+                                    </ul>
+                                )}
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={openCreateModal}
-                            className="rounded-md bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
-                        >
-                            + Add Question
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={(e) => openEditTopicModal(selectedTopic, e)}
+                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                                Edit topic
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openCreateModal}
+                                className="rounded-md bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                            >
+                                + Add Question
+                            </button>
+                        </div>
                     </div>
 
                     {/* Klenam File Import Form (§12 POST /api/topics/{topicId}/questions/import) */}
@@ -374,7 +569,8 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
                                     Import Klenam AI Questions
                                 </h3>
                                 <p className="text-xs text-slate-500">
-                                    Upload a Klenam JSON or CSV export to add objective questions to this topic.
+                                    Upload a Klenam JSON or CSV export to add objective questions to
+                                    this topic.
                                 </p>
                             </div>
 
@@ -407,8 +603,8 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
                         {importReport && (
                             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
                                 <div className="font-semibold text-slate-800">
-                                    Imported {importReport.imported?.length ?? 0} question(s); rejected{' '}
-                                    {importReport.rejected?.length ?? 0}.
+                                    Imported {importReport.imported?.length ?? 0} question(s);
+                                    rejected {importReport.rejected?.length ?? 0}.
                                 </div>
                                 {Array.isArray(importReport.rejected) &&
                                     importReport.rejected.length > 0 && (
@@ -551,6 +747,97 @@ export default function LecturerQuestionBank({ topics, onTopicsChanged }) {
                             })}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Add / Edit Topic Modal (§13) */}
+            {editingTopic && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                    <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            {editingTopic === 'new' ? 'Add Topic' : 'Edit Topic'}
+                        </h2>
+                        <form onSubmit={handleSaveTopic} className="mt-4 space-y-4 text-sm">
+                            <div>
+                                <label
+                                    htmlFor="topic_name"
+                                    className="mb-1 block text-xs font-medium text-slate-700"
+                                >
+                                    Topic name
+                                </label>
+                                <input
+                                    id="topic_name"
+                                    type="text"
+                                    maxLength={255}
+                                    required
+                                    value={topicForm.name}
+                                    onChange={(e) =>
+                                        setTopicForm((f) => ({ ...f, name: e.target.value }))
+                                    }
+                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="topic_description"
+                                    className="mb-1 block text-xs font-medium text-slate-700"
+                                >
+                                    Description (optional)
+                                </label>
+                                <textarea
+                                    id="topic_description"
+                                    rows={2}
+                                    value={topicForm.description}
+                                    onChange={(e) =>
+                                        setTopicForm((f) => ({
+                                            ...f,
+                                            description: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="topic_outcomes"
+                                    className="mb-1 block text-xs font-medium text-slate-700"
+                                >
+                                    Learning outcomes (optional, one per line)
+                                </label>
+                                <textarea
+                                    id="topic_outcomes"
+                                    rows={3}
+                                    value={topicForm.learning_outcomes_text}
+                                    onChange={(e) =>
+                                        setTopicForm((f) => ({
+                                            ...f,
+                                            learning_outcomes_text: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingTopic(null)}
+                                    className="rounded-md border border-slate-300 px-3.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingTopic}
+                                    className="rounded-md bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                                >
+                                    {savingTopic ? 'Saving…' : 'Save topic'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 

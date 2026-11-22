@@ -1,6 +1,24 @@
 import client from './client';
 
 // ============================================================================
+// §13 Canvas connection (any signed-in user) and lecturer topic management
+// ============================================================================
+
+export const fetchCanvasStatus = () => client.get('/me/canvas').then((r) => r.data);
+
+export const connectCanvasToken = (accessToken) =>
+    client.post('/me/canvas', { access_token: accessToken }).then((r) => r.data);
+
+export const disconnectCanvasToken = () =>
+    client.delete('/me/canvas').then((r) => r.data);
+
+export const createCourseTopic = (courseId, body) =>
+    client.post(`/courses/${courseId}/topics`, body).then((r) => r.data);
+
+export const updateCourseTopic = (topicId, body) =>
+    client.patch(`/topics/${topicId}`, body).then((r) => r.data);
+
+// ============================================================================
 // §10 Courses, topic performance and Canvas sync
 // ============================================================================
 

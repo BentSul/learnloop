@@ -32,6 +32,7 @@ export default function CourseDetail() {
     const [syncSummary, setSyncSummary] = useState(null);
     const [busyAction, setBusyAction] = useState(null);
     const [error, setError] = useState(null);
+    const [needsCanvasReconnect, setNeedsCanvasReconnect] = useState(false);
 
     const loadCourseData = useCallback(async () => {
         setLoading(true);
@@ -65,6 +66,7 @@ export default function CourseDetail() {
     const handleSyncNow = async () => {
         setSyncing(true);
         setError(null);
+        setNeedsCanvasReconnect(false);
         setSyncSummary(null);
         try {
             const result = await syncCourseNow(courseId);
@@ -72,6 +74,9 @@ export default function CourseDetail() {
             await loadCourseData();
         } catch (err) {
             setError(parseApiError(err).message);
+            if (err?.response?.status === 409) {
+                setNeedsCanvasReconnect(true);
+            }
         } finally {
             setSyncing(false);
         }
@@ -207,7 +212,15 @@ export default function CourseDetail() {
 
             {error && (
                 <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {error}
+                    <span>{error}</span>
+                    {needsCanvasReconnect && (
+                        <Link
+                            to="/canvas"
+                            className="ml-2 font-semibold underline hover:text-rose-900"
+                        >
+                            Go to Canvas connection →
+                        </Link>
+                    )}
                 </div>
             )}
 

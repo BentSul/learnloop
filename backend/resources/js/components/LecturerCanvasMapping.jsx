@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchCanvasItems, saveCanvasMappings } from '../api/adaptive';
 import { parseApiError } from '../api/client';
 
@@ -15,7 +16,9 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [errorList, setErrorList] = useState([]);
+    const [needsCanvasReconnect, setNeedsCanvasReconnect] = useState(false);
     const [feedback, setFeedback] = useState(null);
+    const activeTopics = topics.filter((t) => t.status !== 'archived');
 
     const hydrateDrafts = useCallback((canvasItems) => {
         const map = {};
@@ -51,6 +54,9 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
             hydrateDrafts(list);
         } catch (err) {
             setError(parseApiError(err).message);
+            if (err?.response?.status === 409) {
+                setNeedsCanvasReconnect(true);
+            }
         } finally {
             setLoading(false);
         }
@@ -99,6 +105,9 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
             const data = err?.response?.data;
             setError(data?.message ?? parseApiError(err).message);
             setErrorList(Array.isArray(data?.errors) ? data.errors : []);
+            if (err?.response?.status === 409) {
+                setNeedsCanvasReconnect(true);
+            }
         } finally {
             setSaving(false);
         }
@@ -143,7 +152,17 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
 
             {error && (
                 <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    <div>{error}</div>
+                    <div>
+                        <span>{error}</span>
+                        {needsCanvasReconnect && (
+                            <Link
+                                to="/canvas"
+                                className="ml-2 font-semibold underline hover:text-rose-900"
+                            >
+                                Go to Canvas connection →
+                            </Link>
+                        )}
+                    </div>
                     {errorList.length > 0 && (
                         <ul className="mt-1.5 list-inside list-disc text-xs">
                             {errorList.map((e, i) => (
@@ -213,7 +232,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                         className="rounded-md border border-slate-300 px-2.5 py-1.5"
                                     >
                                         <option value="">— Not mapped —</option>
-                                        {topics.map((t) => (
+                                        {activeTopics.map((t) => (
                                             <option key={t.id} value={t.id}>
                                                 {t.name ?? t.topic_name}
                                             </option>
@@ -286,7 +305,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                                             <option value="">
                                                                 — Not mapped —
                                                             </option>
-                                                            {topics.map((t) => (
+                                                            {activeTopics.map((t) => (
                                                                 <option key={t.id} value={t.id}>
                                                                     {t.name ?? t.topic_name}
                                                                 </option>

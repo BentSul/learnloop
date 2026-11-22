@@ -144,6 +144,7 @@ export default function LecturerHub() {
                 <>
                     {activeTab === 'questions' && (
                         <LecturerQuestionBank
+                            courseId={courseId}
                             topics={topics}
                             onTopicsChanged={() => loadTopics(courseId)}
                         />

@@ -5,6 +5,7 @@ import '../css/app.css';
 import { AuthProvider } from './auth/AuthContext';
 import { GuestOnly, RequireAuth } from './auth/guards';
 import Layout from './components/Layout';
+import CanvasConnection from './pages/CanvasConnection';
 import CourseDetail from './pages/CourseDetail';
 import Dashboard from './pages/Dashboard';
 import LecturerHub from './pages/LecturerHub';
@@ -31,6 +32,7 @@ function App() {
                             <Route path="/courses/:courseId" element={<CourseDetail />} />
                             <Route path="/attempts/:attemptId" element={<QuizPlayer />} />
                             <Route path="/recommendations" element={<Recommendations />} />
+                            <Route path="/canvas" element={<CanvasConnection />} />
                             <Route path="/lecturer" element={<LecturerHub />} />
                             <Route path="/lecturer/courses/:courseId" element={<LecturerHub />} />
                             <Route
