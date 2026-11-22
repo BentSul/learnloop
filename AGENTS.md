@@ -84,7 +84,8 @@ At the end of each task, report:
 | Canvas gateway, fixture adapter, sync service, course access, topic performance response, demo seeder | Claude | `canvas-fixture` | Ready for review |
 | Dashboard / topic / Canvas sync API controllers + routes (contract §10) | Antigravity | after `canvas-fixture` merges | Not started |
 | Canvas token adapter (`CanvasGateway` implementation using a personal access token) | Antigravity | later | Not started |
-| Recommendation engine and reconciliation | Claude | later | Not started |
+| Recommendation engine, goals/help requests, revision quiz generator | Claude | `recommendations` | Ready for review |
+| Recommendation, goal and revision API controllers + routes (contract §11) | Antigravity | after `recommendations` merges | Not started |
 
 **Environment facts:** MariaDB 12.2.2 (database `learnloop`, user `learnloop`). PHP 8.2. Laravel 12.72. Tests run on in-memory SQLite (`phpunit.xml`); never point tests at the real database.
 
@@ -134,3 +135,34 @@ pairs with source labels. Display it as is; do not recompute percentages or stat
 **Demo data:** `php artisan migrate:fresh --seed` loads two courses linked to the Canvas fixtures
 (`database/fixtures/canvas`), 28 questions, practice sets and three learners (password `password123`):
 alex.morgan (strong), jamie.lee (needs help, conflict, pending grade), sam.patel (little evidence).
+
+## 11. API contract: recommendations, goals and revision quizzes (for Antigravity)
+
+Services: `App\Services\Adaptive\Recommendations\{RecommendationQuery, RecommendationActions}`,
+`App\Services\Adaptive\GoalService`, `App\Services\Adaptive\Quiz\RevisionQuizService`.
+Resolve them from the container (`app(...)` or constructor injection). Their exceptions render their own JSON.
+Check course/topic access with `CourseAccess::isStudent()` before calling them (404 otherwise).
+
+| Method and route | Service call | Success response |
+|---|---|---|
+| `GET /api/me/recommendations?state=active\|accepted\|postponed\|dismissed\|history` | `RecommendationQuery::section($user, $state)` | 200, `{"data": [...]}` |
+| `GET /api/me/recommendations/shortlist` | `RecommendationQuery::shortlist($user)` | 200, `{"data": [...]}` (top 5 active) |
+| `POST /api/me/recommendations/{id}/accept` | `RecommendationActions::accept($user, $id)` | 200, `RecommendationPresenter::toArray($rec)` |
+| `POST /api/me/recommendations/{id}/postpone` body `{"reminder_at": "ISO 8601 with offset"}` | `postpone($user, $id, $reminderAt)` | 200, presenter output |
+| `POST /api/me/recommendations/{id}/dismiss` | `dismiss($user, $id)` | 200, presenter output |
+| `POST /api/me/recommendations/{id}/restore` | `restore($user, $id)` → `{recommendation, restored, message}` | 200, `{"data": presenter(recommendation), "restored": bool, "message": string}` |
+| `GET /api/me/goals` | `GoalService::forLearner($user)` | 200, `[{id, topic: {id, name}, goal_type}]` |
+| `POST /api/me/topics/{topicId}/goals` / `DELETE` same | `GoalService::add/remove($user, $topic, GoalType::Mastery)` | 201 / 204 |
+| `POST /api/me/topics/{topicId}/help-requests` / `DELETE` same | `GoalService::add/remove($user, $topic, GoalType::Help)` | 201 / 204 |
+| `POST /api/me/topics/{topicId}/revision-quiz` | `RevisionQuizService::createAndStart($user, $topic)` | 201, `LearnerAttemptView::make($attempt)` |
+| `GET /api/me/courses/{courseId}/diagnostic-prompt` | `RecommendationEngine::showDiagnosticPrompt($user, $course)` | 200, `{"show": bool}` |
+
+Each recommendation item has: `id`, `topic {id, name}`, `state`, `priority` (high|medium|low|optional),
+`primary_reason`, `reason_codes`, `reasons` (sentences to display), `suggested_action {key, text}`
+(key: revise_topic | revision_quiz | request_help | diagnostic), `performance {status, label,
+performance_display, earned_marks, max_marks}`, `reminder_at`, `created_at`.
+
+Recommendations page: sections Active, Accepted, Postponed, Dismissed and History. Every active card offers
+**Accept**, **Remind me later** (date-time picker; future, max 60 days) and **Never again**. Dismissed cards
+offer **Restore**; when `restored` is false show `message`. Never change state any other way: the services
+write the history and enforce one open recommendation per topic.
