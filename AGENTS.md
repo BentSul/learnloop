@@ -81,7 +81,9 @@ At the end of each task, report:
 | React app scaffold | Antigravity | `frontend` | In progress |
 | Practice quiz service: start attempt (freeze items), autosave, submit, auto-mark | Claude | `practice-quiz` | Ready for review |
 | Practice quiz API controllers + routes (contract below) | Antigravity | after `practice-quiz` merges | Not started |
-| Canvas fixture adapter + sample data seeders | Claude | next | Not started |
+| Canvas gateway, fixture adapter, sync service, course access, topic performance response, demo seeder | Claude | `canvas-fixture` | Ready for review |
+| Dashboard / topic / Canvas sync API controllers + routes (contract §10) | Antigravity | after `canvas-fixture` merges | Not started |
+| Canvas token adapter (`CanvasGateway` implementation using a personal access token) | Antigravity | later | Not started |
 | Recommendation engine and reconciliation | Claude | later | Not started |
 
 **Environment facts:** MariaDB 12.2.2 (database `learnloop`, user `learnloop`). PHP 8.2. Laravel 12.72. Tests run on in-memory SQLite (`phpunit.xml`); never point tests at the real database.
@@ -112,3 +114,23 @@ Errors returned by the service: 404 not yours / hidden revision quiz; 409 attemp
 
 `LearnerAttemptView` and `toLearnerArray()` never contain answer keys. Do not add fields from
 `questions.answer_data` or `attempt_items.marking_snapshot` to any learner response.
+
+## 10. API contract: courses, topic performance and Canvas sync (for Antigravity)
+
+Use `App\Services\Adaptive\CourseAccess` for every course check (Canvas roles, v0.8 D12): a learner must be
+`isStudent`, a lecturer `isLecturer`; otherwise return 404. Do not use `users.role` alone for course access.
+
+| Method and route | Service call | Success response |
+|---|---|---|
+| `GET /api/me/courses` | `CourseAccess::coursesFor($user)` | 200, `[{id, name, code}]` |
+| `GET /api/me/courses/{courseId}/topics` | if `CanvasSyncService::needsSync()` then `syncLearnerCourse()` (ignore `CanvasNotConnected`), then `TopicPerformanceService::forLearnerCourse($user, $course)` | 200, `{"data": [...]}` — each item is the §13.4 shape |
+| `POST /api/me/courses/{courseId}/sync` | `CanvasSyncService::syncLearnerCourse($user, $course)` | 200, `{created, unchanged, skipped, flagged}` |
+| `GET /api/me/courses/{courseId}/practice` | assessments of the course with `assessment_type = practice` and `status = open` | 200, `[{id, title, topic}]` |
+
+`TopicPerformanceService` output already contains labels, explanations, confidence reason texts and conflict
+pairs with source labels. Display it as is; do not recompute percentages or statuses in React. Show
+`performance_display` exactly (it is already rounded down, C13). Never present coverage as a fraction of topic size.
+
+**Demo data:** `php artisan migrate:fresh --seed` loads two courses linked to the Canvas fixtures
+(`database/fixtures/canvas`), 28 questions, practice sets and three learners (password `password123`):
+alex.morgan (strong), jamie.lee (needs help, conflict, pending grade), sam.patel (little evidence).

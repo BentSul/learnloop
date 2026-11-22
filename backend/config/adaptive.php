@@ -36,6 +36,9 @@ return [
     // Canvas sync (v0.8 amendment §3.6).
     'canvas' => [
         'sync_after_minutes' => 15,
+        // fixture = sample data in database/fixtures/canvas (v0.8 §3.1 Tier 3).
+        'adapter' => env('CANVAS_ADAPTER', 'fixture'),
+        'fixture_path' => env('CANVAS_FIXTURE_PATH', database_path('fixtures/canvas')),
     ],
 
 ];

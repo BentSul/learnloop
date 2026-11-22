@@ -1,0 +1,42 @@
+{
+  "_note": "Sample Canvas data for LearnLoop development and demos (v0.8 §3.1 Tier 3). Field names follow the Canvas REST API. Edit a score and sync again to simulate a Canvas regrade.",
+  "course": { "id": "1001", "name": "Web Technology", "course_code": "WT101" },
+  "enrollments": [
+    { "user_id": "601", "role": "teacher" },
+    { "user_id": "501", "role": "student" },
+    { "user_id": "502", "role": "student" },
+    { "user_id": "503", "role": "student" }
+  ],
+  "assignments": [
+    {
+      "id": "2001", "name": "HTML & CSS Portfolio Page", "points_possible": 20, "due_at": "2026-11-12T23:59:00Z",
+      "submission_types": ["online_upload"],
+      "rubric": [
+        { "id": "crit_html", "description": "HTML structure and semantics", "points": 10 },
+        { "id": "crit_css", "description": "Styling and layout", "points": 10 }
+      ]
+    },
+    {
+      "id": "2002", "name": "JavaScript Logic Quiz", "points_possible": 10, "due_at": "2026-11-17T23:59:00Z",
+      "submission_types": ["online_quiz"], "rubric": []
+    },
+    {
+      "id": "2003", "name": "Class Participation", "points_possible": 5, "due_at": null,
+      "submission_types": ["none"], "rubric": []
+    }
+  ],
+  "submissions": [
+    { "assignment_id": "2001", "user_id": "501", "score": 18, "submitted_at": "2026-11-12T20:10:00Z", "graded_at": "2026-11-14T09:00:00Z", "posted_at": "2026-11-14T09:00:00Z",
+      "rubric_assessment": { "crit_html": { "points": 9 }, "crit_css": { "points": 9 } } },
+    { "assignment_id": "2002", "user_id": "501", "score": 9, "submitted_at": "2026-11-17T18:00:00Z", "graded_at": "2026-11-17T18:00:00Z", "posted_at": "2026-11-17T18:00:00Z" },
+    { "assignment_id": "2003", "user_id": "501", "score": 5, "submitted_at": null, "graded_at": "2026-11-18T10:00:00Z", "posted_at": "2026-11-18T10:00:00Z" },
+
+    { "assignment_id": "2001", "user_id": "502", "score": 11, "submitted_at": "2026-11-12T22:40:00Z", "graded_at": "2026-11-14T09:30:00Z", "posted_at": "2026-11-14T09:30:00Z",
+      "rubric_assessment": { "crit_html": { "points": 6 }, "crit_css": { "points": 5 } } },
+    { "assignment_id": "2002", "user_id": "502", "score": 7, "submitted_at": "2026-11-17T19:20:00Z", "graded_at": "2026-11-17T19:20:00Z", "posted_at": null },
+    { "assignment_id": "2003", "user_id": "502", "score": 4, "submitted_at": null, "graded_at": "2026-11-18T10:00:00Z", "posted_at": "2026-11-18T10:00:00Z" },
+
+    { "assignment_id": "2001", "user_id": "503", "score": null, "excused": true, "submitted_at": null, "graded_at": "2026-11-14T10:00:00Z", "posted_at": "2026-11-14T10:00:00Z" },
+    { "assignment_id": "2002", "user_id": "503", "score": 8, "submitted_at": "2026-11-17T17:45:00Z", "graded_at": "2026-11-17T17:45:00Z", "posted_at": "2026-11-17T17:45:00Z" }
+  ]
+}

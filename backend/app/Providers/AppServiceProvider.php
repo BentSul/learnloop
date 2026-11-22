@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Services\Adaptive\Canvas\CanvasGateway;
+use App\Services\Adaptive\Canvas\FixtureCanvasGateway;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +14,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Canvas adapter (v0.8 §3.1). 'fixture' uses sample data; real adapters are added later.
+        $this->app->bind(CanvasGateway::class, function () {
+            $adapter = config('adaptive.canvas.adapter', 'fixture');
+
+            return match ($adapter) {
+                'fixture' => new FixtureCanvasGateway(config('adaptive.canvas.fixture_path')),
+                default => throw new InvalidArgumentException("Unknown Canvas adapter '{$adapter}'."),
+            };
+        });
     }
 
     /**

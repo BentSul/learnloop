@@ -1,0 +1,42 @@
+{
+  "_note": "Sample Canvas data for LearnLoop development and demos (v0.8 §3.1 Tier 3). Field names follow the Canvas REST API.",
+  "course": { "id": "1002", "name": "Python Programming", "course_code": "PY101" },
+  "enrollments": [
+    { "user_id": "602", "role": "teacher" },
+    { "user_id": "501", "role": "student" },
+    { "user_id": "502", "role": "student" },
+    { "user_id": "503", "role": "student" }
+  ],
+  "assignments": [
+    {
+      "id": "3001", "name": "Python Basics Quiz", "points_possible": 10, "due_at": "2026-11-06T23:59:00Z",
+      "submission_types": ["online_quiz"], "rubric": []
+    },
+    {
+      "id": "3002", "name": "Functions Lab", "points_possible": 10, "due_at": "2026-11-13T23:59:00Z",
+      "submission_types": ["online_upload"], "rubric": []
+    },
+    {
+      "id": "3003", "name": "Data Structures Assignment", "points_possible": 20, "due_at": "2026-11-20T23:59:00Z",
+      "submission_types": ["online_upload"],
+      "rubric": [
+        { "id": "c_lists", "description": "Working with lists", "points": 10 },
+        { "id": "c_dicts", "description": "Working with dictionaries", "points": 10 }
+      ]
+    }
+  ],
+  "submissions": [
+    { "assignment_id": "3001", "user_id": "501", "score": 9, "submitted_at": "2026-11-06T15:00:00Z", "graded_at": "2026-11-06T15:00:00Z", "posted_at": "2026-11-06T15:00:00Z" },
+    { "assignment_id": "3002", "user_id": "501", "score": 8, "submitted_at": "2026-11-13T21:00:00Z", "graded_at": "2026-11-15T11:00:00Z", "posted_at": "2026-11-15T11:00:00Z" },
+    { "assignment_id": "3003", "user_id": "501", "score": 18, "submitted_at": "2026-11-20T20:00:00Z", "graded_at": "2026-11-22T09:00:00Z", "posted_at": "2026-11-22T09:00:00Z",
+      "rubric_assessment": { "c_lists": { "points": 9 }, "c_dicts": { "points": 9 } } },
+
+    { "assignment_id": "3001", "user_id": "502", "score": 6, "submitted_at": "2026-11-06T16:30:00Z", "graded_at": "2026-11-06T16:30:00Z", "posted_at": "2026-11-06T16:30:00Z" },
+    { "assignment_id": "3002", "user_id": "502", "score": 3, "submitted_at": "2026-11-13T23:30:00Z", "graded_at": "2026-11-15T11:30:00Z", "posted_at": "2026-11-15T11:30:00Z" },
+    { "assignment_id": "3003", "user_id": "502", "score": 7, "submitted_at": "2026-11-20T23:00:00Z", "graded_at": "2026-11-22T09:30:00Z", "posted_at": "2026-11-22T09:30:00Z",
+      "rubric_assessment": { "c_lists": { "points": 4 }, "c_dicts": { "points": 3 } } },
+
+    { "assignment_id": "3001", "user_id": "503", "score": null, "workflow_state": "unsubmitted", "submitted_at": null, "graded_at": null, "posted_at": null },
+    { "assignment_id": "3003", "user_id": "503", "score": 12, "submitted_at": "2026-11-20T22:00:00Z", "graded_at": "2026-11-22T10:00:00Z", "posted_at": "2026-11-22T10:00:00Z" }
+  ]
+}
