@@ -26,6 +26,13 @@ interface CanvasGateway
     public function courseRole(string $canvasCourseId, string $canvasUserId): ?string;
 
     /**
+     * Canvas user IDs of the students in a course, as seen by a teacher of that course.
+     *
+     * @return list<string>
+     */
+    public function courseStudents(string $canvasCourseId, string $asCanvasUserId): array;
+
+    /**
      * Assignments (including quizzes) with their rubrics.
      *
      * @return list<array{

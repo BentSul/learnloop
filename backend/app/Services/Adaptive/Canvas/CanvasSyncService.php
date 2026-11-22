@@ -47,6 +47,8 @@ final class CanvasSyncService
             throw new CanvasNotConnected('This course is not linked to Canvas.');
         }
 
+        $mappingVersion = $this->mappingVersion($course); // read before the mappings are loaded
+
         try {
             $summary = DB::transaction(fn () => $this->sync($learner, $course, $connection, $canvasCourseId, $now));
         } catch (Throwable $e) {
@@ -61,7 +63,7 @@ final class CanvasSyncService
         SyncRun::create([
             'user_id' => $learner->id, 'course_id' => $course->id, 'source' => 'canvas',
             'started_at' => $now, 'finished_at' => now(), 'status' => 'succeeded',
-            'summary' => $summary->toArray(),
+            'summary' => $summary->toArray() + ['mapping_version' => $mappingVersion],
         ]);
 
         return $summary;
@@ -76,8 +78,19 @@ final class CanvasSyncService
             ->latest('finished_at')->first();
 
         $minutes = (int) config('adaptive.canvas.sync_after_minutes', 15);
+        if ($last === null || $last->finished_at->lt($now->copy()->subMinutes($minutes))) {
+            return true;
+        }
 
-        return $last === null || $last->finished_at->lt($now->copy()->subMinutes($minutes));
+        // A lecturer changed a mapping after the last sync read the mappings: re-derive now (D13).
+        // Compared by change ID, not time, so changes within the same second are never missed.
+        return $this->mappingVersion($course) > (int) ($last->summary['mapping_version'] ?? 0);
+    }
+
+    /** ID of the course's latest mapping change (0 if none). */
+    private function mappingVersion(Course $course): int
+    {
+        return (int) DB::table('mapping_changes')->where('course_id', $course->id)->max('id');
     }
 
     private function sync(User $learner, Course $course, CanvasConnection $connection, string $canvasCourseId, CarbonInterface $now): SyncSummary
@@ -102,7 +115,12 @@ final class CanvasSyncService
             $assignment = $assignments[$assignmentId] ?? null;
 
             if ($itemMappings === null || $assignment === null) {
-                $summary->skipped++; // not mapped to a topic (v0.8 §3.3)
+                // Not mapped to a topic (v0.8 §3.3). If it was mapped before, record an empty
+                // version so its old evidence stops counting; history is kept (D13).
+                if ($this->hasEvidenceFrom($learner, $assignmentId)) {
+                    $this->storeVersion($learner, $course, $assignmentId, $submission, [], $now);
+                }
+                $summary->skipped++;
                 continue;
             }
 
@@ -218,6 +236,15 @@ final class CanvasSyncService
         }
 
         return true;
+    }
+
+    /** True if the latest stored version of this item still produces evidence items. */
+    private function hasEvidenceFrom(User $learner, string $assignmentId): bool
+    {
+        $latest = ExternalResult::where('source', 'canvas')->where('learner_id', $learner->id)
+            ->where('external_item_ref', $assignmentId)->orderByDesc('version')->first();
+
+        return $latest !== null && $latest->items()->exists();
     }
 
     private static function decimal(float $value): string

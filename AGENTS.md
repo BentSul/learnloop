@@ -86,6 +86,8 @@ At the end of each task, report:
 | Canvas token adapter (`CanvasGateway` implementation using a personal access token) | Antigravity | later | Not started |
 | Recommendation engine, goals/help requests, revision quiz generator | Claude | `recommendations` | Ready for review |
 | Recommendation, goal and revision API controllers + routes (contract §11) | Antigravity | after `recommendations` merges | Not started |
+| Lecturer tools: question bank rules, regrade, Klenam import, Canvas mapping, class overview | Claude | `lecturer-tools` | Ready for review |
+| Lecturer API controllers + screens (contract §12) | Antigravity | after `lecturer-tools` merges | Not started |
 
 **Environment facts:** MariaDB 12.2.2 (database `learnloop`, user `learnloop`). PHP 8.2. Laravel 12.72. Tests run on in-memory SQLite (`phpunit.xml`); never point tests at the real database.
 
@@ -166,3 +168,29 @@ Recommendations page: sections Active, Accepted, Postponed, Dismissed and Histor
 **Accept**, **Remind me later** (date-time picker; future, max 60 days) and **Never again**. Dismissed cards
 offer **Restore**; when `restored` is false show `message`. Never change state any other way: the services
 write the history and enforce one open recommendation per topic.
+
+## 12. API contract: lecturer tools (for Antigravity)
+
+All lecturer services check `CourseAccess::isLecturer()` themselves and throw `LecturerException` (404 for
+other courses, 422 with `errors: [...]` for invalid input). Let the exceptions render.
+Services: `App\Services\Adaptive\Lecturer\{QuestionBankService, KlenamImportService, CanvasMappingService, ClassOverviewService}`.
+
+| Method and route | Service call | Success response |
+|---|---|---|
+| `GET /api/courses/{courseId}/topics` | for each topic: `QuestionBankService::topicSummary($user, $topic)` | 200, topics with `topic_size`, `active_questions`, `warnings` |
+| `GET /api/topics/{topicId}/questions` | topic questions **with** `answer_data` visible (`$q->makeVisible('answer_data')`) — lecturer routes only | 200 |
+| `POST /api/topics/{topicId}/questions` | `QuestionBankService::create($user, $topic, $body)` | 201 |
+| `PATCH /api/questions/{questionId}` | `update($user, $question, $body)` | 200 |
+| `POST /api/questions/{questionId}/archive` | `archive($user, $question)` | 200 |
+| `POST /api/questions/{questionId}/regrade` body `{"answer_data": {...}}` | `regrade($user, $question, $answerData)` | 200, `{regraded, unchanged}` |
+| `POST /api/topics/{topicId}/questions/import` multipart `file` (+ `format` json\|csv) | `KlenamImportService::import($user, $topic, $contents, $format)` | 200, `{imported: [ids], rejected: [{row, reason}]}` |
+| `GET /api/courses/{courseId}/canvas-items` | `CanvasMappingService::items($user, $course)` | 200 |
+| `PUT /api/courses/{courseId}/canvas-mappings` body `{"mappings": [...]}` | `save($user, $course, $body['mappings'])` | 200, updated items |
+| `GET /api/courses/{courseId}/overview` | `ClassOverviewService::forCourse($user, $course)` | 200, `{topics: [{topic_name, counts}], learners: [...]}` |
+| `GET /api/courses/{courseId}/learners/{learnerId}` | `learnerDetail($user, $course, $learnerId)` | 200, `{learner, topics}` (§13.4 shape) |
+
+Question body: `{question_type, question_text, difficulty, max_marks, answer_data: {options: [{id, text}],
+correct_option_ids: [...]}, explanation}`. Once a question has been used, the edit form must disable
+`max_marks`, `question_type` and the options; offer **Regrade** for answer-key corrections.
+Mapping entry: `{canvas_assignment_id, canvas_criterion_id ('' = whole item), topic_id (null = unmap), difficulty}`.
+Never show learners `topic_size`; it is lecturer information only (T2).
