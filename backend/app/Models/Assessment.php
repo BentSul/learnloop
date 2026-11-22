@@ -26,6 +26,11 @@ class Assessment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function topic(): BelongsTo
+    {
+        return $this->belongsTo(Topic::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(AssessmentItem::class)->orderBy('position');
