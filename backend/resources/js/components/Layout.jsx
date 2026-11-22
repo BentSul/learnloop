@@ -1,8 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { mockStore } from '../api/mockData';
 import { useAuth } from '../auth/AuthContext';
-
-// Add entries here as screens are built; no adaptive screens yet.
-const NAV_ITEMS = [{ to: '/dashboard', label: 'Dashboard' }];
 
 const linkClass = ({ isActive }) =>
     `rounded-md px-3 py-2 text-sm font-medium ${
@@ -14,6 +12,14 @@ export default function Layout() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
+    const isLecturerOrAdmin = user?.role === 'lecturer' || user?.role === 'admin';
+
+    const navItems = [
+        { to: '/dashboard', label: 'Dashboard' },
+        { to: '/recommendations', label: 'Recommendations' },
+        ...(isLecturerOrAdmin ? [{ to: '/lecturer', label: 'Lecturer Tools' }] : []),
+    ];
+
     const handleLogout = async () => {
         await logout();
         navigate('/login', { replace: true });
@@ -22,11 +28,13 @@ export default function Layout() {
     return (
         <div className="min-h-screen">
             <header className="border-b border-slate-200 bg-white">
-                <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="flex items-center gap-6">
-                        <span className="text-lg font-bold text-indigo-600">LearnLoop</span>
-                        <nav className="flex gap-1" aria-label="Main">
-                            {NAV_ITEMS.map((item) => (
+                        <NavLink to="/dashboard" className="text-lg font-bold text-indigo-600">
+                            LearnLoop
+                        </NavLink>
+                        <nav className="flex flex-wrap gap-1" aria-label="Main">
+                            {navItems.map((item) => (
                                 <NavLink key={item.to} to={item.to} className={linkClass}>
                                     {item.label}
                                 </NavLink>
@@ -34,6 +42,14 @@ export default function Layout() {
                         </nav>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
+                        {mockStore.isUsingMock() && (
+                            <span
+                                title="API controller route returned 404; displaying contract mock data"
+                                className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                            >
+                                Preview data
+                            </span>
+                        )}
                         <span className="text-slate-700">{user.name}</span>
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">
                             {user.role}
