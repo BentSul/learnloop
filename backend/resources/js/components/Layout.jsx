@@ -1,5 +1,4 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { mockStore } from '../api/mockData';
 import { useAuth } from '../auth/AuthContext';
 
 const linkClass = ({ isActive }) =>
@@ -43,14 +42,6 @@ export default function Layout() {
                         </nav>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                        {mockStore.isUsingMock() && (
-                            <span
-                                title="API controller route returned 404; displaying contract mock data"
-                                className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
-                            >
-                                Preview data
-                            </span>
-                        )}
                         <span className="text-slate-700">{user.name}</span>
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">
                             {user.role}

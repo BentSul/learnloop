@@ -190,16 +190,18 @@ export default function CourseDetail() {
 
             {syncSummary && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-900">
-                    <strong>Canvas sync complete:</strong> {syncSummary.created ?? 0} new/updated,{' '}
-                    {syncSummary.unchanged ?? 0} unchanged, {syncSummary.skipped ?? 0} skipped
-                    {Array.isArray(syncSummary.flagged)
+                    <div>
+                        <strong>Canvas sync complete:</strong> {syncSummary.created ?? 0} new/updated,{' '}
+                        {syncSummary.unchanged ?? 0} unchanged, {syncSummary.skipped ?? 0} skipped.
+                    </div>
+                    {(Array.isArray(syncSummary.flagged)
                         ? syncSummary.flagged.length > 0
-                            ? `, ${syncSummary.flagged.length} flagged (${syncSummary.flagged.join(', ')})`
-                            : ''
-                        : syncSummary.flagged > 0
-                          ? `, ${syncSummary.flagged} flagged`
-                          : ''}
-                    .
+                        : syncSummary.flagged > 0) && (
+                        <div className="mt-1 text-amber-800">
+                            Some Canvas work couldn&apos;t be counted yet; your lecturer has been
+                            notified.
+                        </div>
+                    )}
                 </div>
             )}
 

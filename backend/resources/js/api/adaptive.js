@@ -1,267 +1,134 @@
 import client from './client';
-import { mockStore } from './mockData';
-
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
-
-/**
- * Checks if an Axios 404 is because the Laravel route has not been registered yet
- * ("The route api/... could not be found."). Domain 404s (including an empty 404 body)
- * are always rethrown so the UI shows real errors.
- */
-function isUnmergedRouteError(error) {
-    if (error?.response?.status !== 404) return false;
-    const msg = String(error?.response?.data?.message ?? '');
-    return msg.includes('could not be found');
-}
-
-async function callWithMockFallback(requestFn, fallbackFn) {
-    try {
-        return await requestFn();
-    } catch (error) {
-        if (USE_MOCKS && isUnmergedRouteError(error)) {
-            mockStore.markUsed();
-            return fallbackFn();
-        }
-        throw error;
-    }
-}
 
 // ============================================================================
 // §10 Courses, topic performance and Canvas sync
 // ============================================================================
 
-export const fetchMyCourses = () =>
-    callWithMockFallback(
-        () => client.get('/me/courses').then((r) => r.data),
-        () => mockStore.getCourses(),
-    );
+export const fetchMyCourses = () => client.get('/me/courses').then((r) => r.data);
 
 export const fetchCourseTopics = (courseId) =>
-    callWithMockFallback(
-        () => client.get(`/me/courses/${courseId}/topics`).then((r) => r.data),
-        () => mockStore.getCourseTopics(courseId),
-    );
+    client.get(`/me/courses/${courseId}/topics`).then((r) => r.data);
 
 export const syncCourseNow = (courseId) =>
-    callWithMockFallback(
-        () => client.post(`/me/courses/${courseId}/sync`).then((r) => r.data),
-        () => mockStore.syncCourse(courseId),
-    );
+    client.post(`/me/courses/${courseId}/sync`).then((r) => r.data);
 
 export const fetchCoursePractice = (courseId) =>
-    callWithMockFallback(
-        () => client.get(`/me/courses/${courseId}/practice`).then((r) => r.data),
-        () => mockStore.getCoursePractice(courseId),
-    );
+    client.get(`/me/courses/${courseId}/practice`).then((r) => r.data);
 
 export const fetchDiagnosticPrompt = (courseId) =>
-    callWithMockFallback(
-        () => client.get(`/me/courses/${courseId}/diagnostic-prompt`).then((r) => r.data),
-        () => mockStore.getDiagnosticPrompt(courseId),
-    );
+    client.get(`/me/courses/${courseId}/diagnostic-prompt`).then((r) => r.data);
 
 // ============================================================================
 // §9 Practice quizzes
 // ============================================================================
 
 export const startAssessmentAttempt = (assessmentId) =>
-    callWithMockFallback(
-        () => client.post(`/me/assessments/${assessmentId}/attempts`).then((r) => r.data),
-        () => mockStore.startAttempt(assessmentId),
-    );
+    client.post(`/me/assessments/${assessmentId}/attempts`).then((r) => r.data);
 
 export const fetchAttempt = (attemptId) =>
-    callWithMockFallback(
-        () => client.get(`/me/attempts/${attemptId}`).then((r) => r.data),
-        () => mockStore.getAttempt(attemptId),
-    );
+    client.get(`/me/attempts/${attemptId}`).then((r) => r.data);
 
 export const saveAttemptAnswer = (attemptId, questionId, optionIds) =>
-    callWithMockFallback(
-        () =>
-            client
-                .put(`/me/attempts/${attemptId}/answers/${questionId}`, {
-                    option_ids: optionIds,
-                })
-                .then((r) => r.data),
-        () => mockStore.saveAnswer(attemptId, questionId, { option_ids: optionIds }),
-    );
+    client
+        .put(`/me/attempts/${attemptId}/answers/${questionId}`, {
+            option_ids: optionIds,
+        })
+        .then((r) => r.data);
 
 export const submitAttempt = (attemptId, confirmUnanswered = false) =>
-    callWithMockFallback(
-        () =>
-            client
-                .post(`/me/attempts/${attemptId}/submit`, {
-                    confirm_unanswered: confirmUnanswered,
-                })
-                .then((r) => r.data),
-        () => mockStore.submitAttempt(attemptId, confirmUnanswered),
-    );
+    client
+        .post(`/me/attempts/${attemptId}/submit`, {
+            confirm_unanswered: confirmUnanswered,
+        })
+        .then((r) => r.data);
 
 // ============================================================================
 // §11 Recommendations, goals and revision quizzes
 // ============================================================================
 
 export const fetchRecommendations = (state = 'active') =>
-    callWithMockFallback(
-        () => client.get('/me/recommendations', { params: { state } }).then((r) => r.data),
-        () => mockStore.getRecommendations(state),
-    );
+    client.get('/me/recommendations', { params: { state } }).then((r) => r.data);
 
 export const fetchRecommendationShortlist = () =>
-    callWithMockFallback(
-        () => client.get('/me/recommendations/shortlist').then((r) => r.data),
-        () => mockStore.getShortlist(),
-    );
+    client.get('/me/recommendations/shortlist').then((r) => r.data);
 
 export const acceptRecommendation = (id) =>
-    callWithMockFallback(
-        () => client.post(`/me/recommendations/${id}/accept`).then((r) => r.data),
-        () => mockStore.acceptRecommendation(id),
-    );
+    client.post(`/me/recommendations/${id}/accept`).then((r) => r.data);
 
 export const postponeRecommendation = (id, reminderAt) =>
-    callWithMockFallback(
-        () =>
-            client
-                .post(`/me/recommendations/${id}/postpone`, { reminder_at: reminderAt })
-                .then((r) => r.data),
-        () => mockStore.postponeRecommendation(id, reminderAt),
-    );
+    client
+        .post(`/me/recommendations/${id}/postpone`, { reminder_at: reminderAt })
+        .then((r) => r.data);
 
 export const dismissRecommendation = (id) =>
-    callWithMockFallback(
-        () => client.post(`/me/recommendations/${id}/dismiss`).then((r) => r.data),
-        () => mockStore.dismissRecommendation(id),
-    );
+    client.post(`/me/recommendations/${id}/dismiss`).then((r) => r.data);
 
 export const restoreRecommendation = (id) =>
-    callWithMockFallback(
-        () => client.post(`/me/recommendations/${id}/restore`).then((r) => r.data),
-        () => mockStore.restoreRecommendation(id),
-    );
+    client.post(`/me/recommendations/${id}/restore`).then((r) => r.data);
 
-export const fetchMyGoals = () =>
-    callWithMockFallback(
-        () => client.get('/me/goals').then((r) => r.data),
-        () => mockStore.getGoals(),
-    );
+export const fetchMyGoals = () => client.get('/me/goals').then((r) => r.data);
 
 export const addMasteryGoal = (topicId) =>
-    callWithMockFallback(
-        () => client.post(`/me/topics/${topicId}/goals`).then((r) => r.data),
-        () => mockStore.addGoal(topicId, 'mastery'),
-    );
+    client.post(`/me/topics/${topicId}/goals`).then((r) => r.data);
 
 export const removeMasteryGoal = (topicId) =>
-    callWithMockFallback(
-        () => client.delete(`/me/topics/${topicId}/goals`).then((r) => r.data),
-        () => mockStore.removeGoal(topicId, 'mastery'),
-    );
+    client.delete(`/me/topics/${topicId}/goals`).then((r) => r.data);
 
 export const addHelpRequest = (topicId) =>
-    callWithMockFallback(
-        () => client.post(`/me/topics/${topicId}/help-requests`).then((r) => r.data),
-        () => mockStore.addGoal(topicId, 'help'),
-    );
+    client.post(`/me/topics/${topicId}/help-requests`).then((r) => r.data);
 
 export const removeHelpRequest = (topicId) =>
-    callWithMockFallback(
-        () => client.delete(`/me/topics/${topicId}/help-requests`).then((r) => r.data),
-        () => mockStore.removeGoal(topicId, 'help'),
-    );
+    client.delete(`/me/topics/${topicId}/help-requests`).then((r) => r.data);
 
 export const startRevisionQuiz = (topicId) =>
-    callWithMockFallback(
-        () => client.post(`/me/topics/${topicId}/revision-quiz`).then((r) => r.data),
-        () => mockStore.startRevisionQuiz(topicId),
-    );
+    client.post(`/me/topics/${topicId}/revision-quiz`).then((r) => r.data);
 
 // ============================================================================
 // §12 Lecturer tools
 // ============================================================================
 
 export const fetchLecturerCourseTopics = (courseId) =>
-    callWithMockFallback(
-        () => client.get(`/courses/${courseId}/topics`).then((r) => r.data),
-        () => mockStore.getLecturerTopics(courseId),
-    );
+    client.get(`/courses/${courseId}/topics`).then((r) => r.data);
 
 export const fetchTopicQuestions = (topicId) =>
-    callWithMockFallback(
-        () => client.get(`/topics/${topicId}/questions`).then((r) => r.data),
-        () => mockStore.getTopicQuestions(topicId),
-    );
+    client.get(`/topics/${topicId}/questions`).then((r) => r.data);
 
 export const createTopicQuestion = (topicId, body) =>
-    callWithMockFallback(
-        () => client.post(`/topics/${topicId}/questions`, body).then((r) => r.data),
-        () => mockStore.createQuestion(topicId, body),
-    );
+    client.post(`/topics/${topicId}/questions`, body).then((r) => r.data);
 
 export const updateQuestion = (questionId, body) =>
-    callWithMockFallback(
-        () => client.patch(`/questions/${questionId}`, body).then((r) => r.data),
-        () => mockStore.updateQuestion(questionId, body),
-    );
+    client.patch(`/questions/${questionId}`, body).then((r) => r.data);
 
 export const archiveQuestion = (questionId) =>
-    callWithMockFallback(
-        () => client.post(`/questions/${questionId}/archive`).then((r) => r.data),
-        () => mockStore.archiveQuestion(questionId),
-    );
+    client.post(`/questions/${questionId}/archive`).then((r) => r.data);
 
 export const regradeQuestion = (questionId, answerData) =>
-    callWithMockFallback(
-        () =>
-            client
-                .post(`/questions/${questionId}/regrade`, { answer_data: answerData })
-                .then((r) => r.data),
-        () => mockStore.regradeQuestion(questionId, answerData),
-    );
+    client
+        .post(`/questions/${questionId}/regrade`, { answer_data: answerData })
+        .then((r) => r.data);
 
 export const importKlenamQuestions = (topicId, file, format) => {
     const formData = new FormData();
     formData.append('file', file);
     if (format) formData.append('format', format);
 
-    return callWithMockFallback(
-        () =>
-            client
-                .post(`/topics/${topicId}/questions/import`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                })
-                .then((r) => r.data),
-        () => mockStore.importKlenamQuestions(topicId, file, format),
-    );
+    return client
+        .post(`/topics/${topicId}/questions/import`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => r.data);
 };
 
 export const fetchCanvasItems = (courseId) =>
-    callWithMockFallback(
-        () => client.get(`/courses/${courseId}/canvas-items`).then((r) => r.data),
-        () => mockStore.getCanvasItems(courseId),
-    );
+    client.get(`/courses/${courseId}/canvas-items`).then((r) => r.data);
 
 export const saveCanvasMappings = (courseId, mappings) =>
-    callWithMockFallback(
-        () =>
-            client
-                .put(`/courses/${courseId}/canvas-mappings`, { mappings })
-                .then((r) => r.data),
-        () => mockStore.saveCanvasMappings(courseId, mappings),
-    );
+    client
+        .put(`/courses/${courseId}/canvas-mappings`, { mappings })
+        .then((r) => r.data);
 
 export const fetchClassOverview = (courseId) =>
-    callWithMockFallback(
-        () => client.get(`/courses/${courseId}/overview`).then((r) => r.data),
-        () => mockStore.getClassOverview(courseId),
-    );
+    client.get(`/courses/${courseId}/overview`).then((r) => r.data);
 
 export const fetchLearnerDetail = (courseId, learnerId) =>
-    callWithMockFallback(
-        () =>
-            client
-                .get(`/courses/${courseId}/learners/${learnerId}`)
-                .then((r) => r.data),
-        () => mockStore.getLearnerDetail(courseId, learnerId),
-    );
+    client.get(`/courses/${courseId}/learners/${learnerId}`).then((r) => r.data);
