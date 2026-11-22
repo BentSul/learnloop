@@ -199,7 +199,7 @@ final class EvidenceAssembler
                     'order' => $this->orderKey($assessedAt, (int) $current->id),
                     'item' => new EvidenceItem(
                         $row->evidence_key,
-                        $current->source,
+                        $row->source_group ?? $current->source, // Klenam quizzes published via Canvas (v0.8 D1-R)
                         Difficulty::fromNullable($row->difficulty),
                         min($earned, $max), // extra credit is capped at points possible (v0.8 §3.4)
                         $max,
