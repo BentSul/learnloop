@@ -192,7 +192,14 @@ export default function CourseDetail() {
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-900">
                     <strong>Canvas sync complete:</strong> {syncSummary.created ?? 0} new/updated,{' '}
                     {syncSummary.unchanged ?? 0} unchanged, {syncSummary.skipped ?? 0} skipped
-                    {syncSummary.flagged > 0 ? `, ${syncSummary.flagged} flagged` : ''}.
+                    {Array.isArray(syncSummary.flagged)
+                        ? syncSummary.flagged.length > 0
+                            ? `, ${syncSummary.flagged.length} flagged (${syncSummary.flagged.join(', ')})`
+                            : ''
+                        : syncSummary.flagged > 0
+                          ? `, ${syncSummary.flagged} flagged`
+                          : ''}
+                    .
                 </div>
             )}
 

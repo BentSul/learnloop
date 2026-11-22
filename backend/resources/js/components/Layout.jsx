@@ -13,10 +13,11 @@ export default function Layout() {
     const navigate = useNavigate();
 
     const isLecturerOrAdmin = user?.role === 'lecturer' || user?.role === 'admin';
+    const isLecturerOnly = user?.role === 'lecturer';
 
     const navItems = [
         { to: '/dashboard', label: 'Dashboard' },
-        { to: '/recommendations', label: 'Recommendations' },
+        ...(!isLecturerOnly ? [{ to: '/recommendations', label: 'Recommendations' }] : []),
         ...(isLecturerOrAdmin ? [{ to: '/lecturer', label: 'Lecturer Tools' }] : []),
     ];
 

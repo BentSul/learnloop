@@ -29,6 +29,7 @@ export default function Dashboard() {
     const [postponeTarget, setPostponeTarget] = useState(null);
 
     const isLecturerOrAdmin = user?.role === 'lecturer' || user?.role === 'admin';
+    const isLecturerOnly = user?.role === 'lecturer';
 
     const loadDashboard = useCallback(async () => {
         setLoading(true);
@@ -172,18 +173,24 @@ export default function Dashboard() {
                                     </h3>
                                 </div>
                                 <div className="mt-4 flex flex-wrap items-center gap-2 pt-2">
-                                    <Link
-                                        to={`/courses/${course.id}`}
-                                        className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-                                    >
-                                        View topics & practice
-                                    </Link>
+                                    {!isLecturerOnly && (
+                                        <Link
+                                            to={`/courses/${course.id}`}
+                                            className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                                        >
+                                            View topics & practice
+                                        </Link>
+                                    )}
                                     {isLecturerOrAdmin && (
                                         <Link
                                             to={`/lecturer/courses/${course.id}`}
-                                            className="rounded-md border border-slate-300 px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                            className={
+                                                isLecturerOnly
+                                                    ? 'rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700'
+                                                    : 'rounded-md border border-slate-300 px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50'
+                                            }
                                         >
-                                            Manage course
+                                            Manage course (Lecturer Tools)
                                         </Link>
                                     )}
                                 </div>
@@ -227,49 +234,51 @@ export default function Dashboard() {
                 </section>
             )}
 
-            {/* Top 5 Active Recommendations Shortlist */}
-            <section>
-                <div className="mb-3 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-900">
-                            Recommended Next Steps (Top 5)
-                        </h2>
-                        <p className="text-xs text-slate-500">
-                            Ordered by priority, help requests, mastery goals, and lowest performance first.
-                        </p>
+            {/* Top 5 Active Recommendations Shortlist (learners) */}
+            {!isLecturerOnly && (
+                <section>
+                    <div className="mb-3 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold text-slate-900">
+                                Recommended Next Steps (Top 5)
+                            </h2>
+                            <p className="text-xs text-slate-500">
+                                Ordered by priority, help requests, mastery goals, and lowest performance first.
+                            </p>
+                        </div>
+                        <Link
+                            to="/recommendations"
+                            className="text-sm font-medium text-indigo-600 hover:underline"
+                        >
+                            View all recommendations →
+                        </Link>
                     </div>
-                    <Link
-                        to="/recommendations"
-                        className="text-sm font-medium text-indigo-600 hover:underline"
-                    >
-                        View all recommendations →
-                    </Link>
-                </div>
 
-                {loading ? (
-                    <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-                        Loading recommendations…
-                    </div>
-                ) : shortlist.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-                        You have no active recommendations right now. Keep up the strong work!
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {shortlist.map((rec) => (
-                            <RecommendationCard
-                                key={rec.id}
-                                rec={rec}
-                                busyId={busyId}
-                                onAccept={handleAccept}
-                                onOpenPostpone={setPostponeTarget}
-                                onDismiss={handleDismiss}
-                                onStartRevisionQuiz={handleStartRevision}
-                            />
-                        ))}
-                    </div>
-                )}
-            </section>
+                    {loading ? (
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+                            Loading recommendations…
+                        </div>
+                    ) : shortlist.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                            You have no active recommendations right now. Keep up the strong work!
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {shortlist.map((rec) => (
+                                <RecommendationCard
+                                    key={rec.id}
+                                    rec={rec}
+                                    busyId={busyId}
+                                    onAccept={handleAccept}
+                                    onOpenPostpone={setPostponeTarget}
+                                    onDismiss={handleDismiss}
+                                    onStartRevisionQuiz={handleStartRevision}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
 
             <PostponeModal
                 recommendation={postponeTarget}

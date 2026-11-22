@@ -135,6 +135,7 @@ export default function QuizPlayer() {
     const answeredCount = questions.filter(
         (q) => (selectedByQuestion[q.question_id] ?? []).length > 0,
     ).length;
+    const isReadOnlySubmitted = attempt.status !== 'in_progress' && !submitResult;
 
     // Post-submission result view ($result->toLearnerArray())
     if (submitResult) {
@@ -262,15 +263,18 @@ export default function QuizPlayer() {
                         {saveStatus === 'saving' && 'Saving answer…'}
                         {saveStatus === 'saved' && '✓ Saved'}
                         {saveStatus === 'error' && '⚠ Save failed'}
+                        {isReadOnlySubmitted && `Status: ${attempt.status}`}
                     </span>
-                    <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => doSubmit(false)}
-                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-                    >
-                        {submitting ? 'Submitting…' : 'Submit quiz'}
-                    </button>
+                    {!isReadOnlySubmitted && (
+                        <button
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => doSubmit(false)}
+                            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                        >
+                            {submitting ? 'Submitting…' : 'Submit quiz'}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -343,16 +347,18 @@ export default function QuizPlayer() {
                 })}
             </div>
 
-            <div className="flex justify-end">
-                <button
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => doSubmit(false)}
-                    className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-                >
-                    {submitting ? 'Submitting…' : 'Submit quiz'}
-                </button>
-            </div>
+            {!isReadOnlySubmitted && (
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => doSubmit(false)}
+                        className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                    >
+                        {submitting ? 'Submitting…' : 'Submit quiz'}
+                    </button>
+                </div>
+            )}
 
             <SubmitAttemptDialog
                 unansweredCount={unansweredPromptCount}
