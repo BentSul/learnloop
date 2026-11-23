@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ExternalResultItem extends Model
 {
     protected $fillable = [
-        'external_result_id', 'evidence_key', 'topic_id', 'difficulty', 'earned_marks', 'max_marks',
+        'external_result_id', 'evidence_key', 'topic_id', 'difficulty', 'source_group', 'earned_marks', 'max_marks',
     ];
 
     public function result(): BelongsTo

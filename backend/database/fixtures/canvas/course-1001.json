@@ -17,8 +17,8 @@
       ]
     },
     {
-      "id": "2002", "name": "JavaScript Logic Quiz", "points_possible": 10, "due_at": "2026-11-17T23:59:00Z",
-      "submission_types": ["online_quiz"], "rubric": []
+      "id": "2002", "name": "Klenam AI Quiz: JavaScript Logic", "points_possible": 10, "due_at": "2026-11-17T23:59:00Z",
+      "submission_types": ["external_tool"], "rubric": []
     },
     {
       "id": "2003", "name": "Class Participation", "points_possible": 5, "due_at": null,

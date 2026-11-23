@@ -97,13 +97,15 @@ class AdaptiveDemoSeeder extends Seeder
                     ]);
                 }
 
-                foreach ($topicData['canvas'] as [$assignmentId, $criterionId, $difficulty]) {
+                foreach ($topicData['canvas'] as $mapping) {
+                    [$assignmentId, $criterionId, $difficulty] = $mapping;
                     CanvasItemMapping::create([
                         'course_id' => $course->id,
                         'canvas_assignment_id' => $assignmentId,
                         'canvas_criterion_id' => $criterionId,
                         'topic_id' => $topic->id,
                         'difficulty' => $difficulty,
+                        'source_group' => $mapping[3] ?? 'canvas',
                         'mapped_by' => $lecturers[$code]->id,
                     ]);
                 }
@@ -194,7 +196,7 @@ class AdaptiveDemoSeeder extends Seeder
                     'JavaScript logic' => [
                         'description' => 'Comparisons, types, scope and control flow.',
                         'outcomes' => ['Predict the result of comparisons and type checks', 'Use block scope correctly'],
-                        'canvas' => [['2002', '', 'medium']],
+                        'canvas' => [['2002', '', 'medium', 'klenam']], // Klenam AI quiz published to Canvas
                         'questions' => [
                             $this->mcq("What does 3 === '3' evaluate to?", ['true', 'false', 'undefined', 'TypeError'], 1, 'easy', 1),
                             $this->mcq('What does console.log([1, 2, 3].length) print?', ['2', '3', '4', 'undefined'], 1, 'medium', 2),

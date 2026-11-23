@@ -192,7 +192,12 @@ Services: `App\Services\Adaptive\Lecturer\{QuestionBankService, KlenamImportServ
 Question body: `{question_type, question_text, difficulty, max_marks, answer_data: {options: [{id, text}],
 correct_option_ids: [...]}, explanation}`. Once a question has been used, the edit form must disable
 `max_marks`, `question_type` and the options; offer **Regrade** for answer-key corrections.
-Mapping entry: `{canvas_assignment_id, canvas_criterion_id ('' = whole item), topic_id (null = unmap), difficulty}`.
+Mapping entry: `{canvas_assignment_id, canvas_criterion_id ('' = whole item), topic_id (null = unmap), difficulty, source_group}`.
+`source_group` is `canvas` or `klenam`: Klenam AI quizzes publish their scores to Canvas, so the lecturer marks those
+items as **Klenam** (a "Source: Canvas / Klenam AI" select per Canvas item; all criteria of one item share it).
+Leaving it out keeps the current value. Klenam evidence then appears as "Klenam AI" in conflicts. Canvas lists
+external-tool items with `submission_types: ["external_tool"]`; the UI may suggest Klenam for those but must not
+set it automatically.
 Never show learners `topic_size`; it is lecturer information only (T2).
 
 ## 13. API contract: Canvas connection and topics (for Antigravity)

@@ -145,7 +145,7 @@ final class CanvasSyncService
 
     /**
      * @param  list<CanvasItemMapping>  $mappings
-     * @return list<array{evidence_key: string, topic_id: int, difficulty: string, earned_marks: string, max_marks: string}>|null
+     * @return list<array{evidence_key: string, topic_id: int, difficulty: string, source_group: string, earned_marks: string, max_marks: string}>|null
      *         null when the item cannot be turned into evidence and must be flagged
      */
     private function deriveItems(string $canvasCourseId, array $assignment, array $submission, array $mappings): ?array
@@ -162,6 +162,7 @@ final class CanvasSyncService
                 'evidence_key' => "c:{$canvasCourseId}:{$assignment['id']}",
                 'topic_id' => (int) $whole->topic_id,
                 'difficulty' => $whole->difficulty,
+                'source_group' => $whole->source_group ?? 'canvas',
                 'earned_marks' => self::decimal(max(0.0, (float) ($submission['score'] ?? 0))),
                 'max_marks' => self::decimal($max),
             ]];
@@ -187,6 +188,7 @@ final class CanvasSyncService
                 'evidence_key' => "c:{$canvasCourseId}:{$assignment['id']}:{$mapping->canvas_criterion_id}",
                 'topic_id' => (int) $mapping->topic_id,
                 'difficulty' => $mapping->difficulty,
+                'source_group' => $mapping->source_group ?? 'canvas',
                 'earned_marks' => self::decimal(max(0.0, (float) ($points ?? 0))),
                 'max_marks' => self::decimal((float) $criterion['points']),
             ];
