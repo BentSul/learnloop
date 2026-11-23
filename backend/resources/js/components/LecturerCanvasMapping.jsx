@@ -4,14 +4,16 @@ import { fetchCanvasItems, saveCanvasMappings } from '../api/adaptive';
 import { parseApiError } from '../api/client';
 
 /**
- * Lecturer Canvas Mapping screen (AGENTS.md §12, v0.8 §3.3, D10, D13).
+ * Lecturer Canvas Mapping screen (AGENTS.md §12, v0.8 §3.3).
  *
  * Each Canvas assignment is mapped either as a whole item (canvas_criterion_id: '')
- * OR per rubric criterion, never both. Default difficulty is 'medium' (D10).
+ * OR per rubric criterion, never both. All entries of one Canvas item share the item's
+ * source_group ('canvas' | 'klenam').
  */
 export default function LecturerCanvasMapping({ courseId, topics }) {
     const [items, setItems] = useState([]);
     const [drafts, setDrafts] = useState({});
+    const [sourceByAssignment, setSourceByAssignment] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -22,7 +24,14 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
 
     const hydrateDrafts = useCallback((canvasItems) => {
         const map = {};
+        const sources = {};
         for (const item of canvasItems) {
+            const existingCriterionSource = (item.criteria ?? []).find(
+                (c) => c.mapping?.source_group,
+            )?.mapping?.source_group;
+            sources[item.canvas_assignment_id] =
+                item.mapping?.source_group ?? existingCriterionSource ?? 'canvas';
+
             const wholeKey = `${item.canvas_assignment_id}|`;
             map[wholeKey] = {
                 canvas_assignment_id: item.canvas_assignment_id,
@@ -41,6 +50,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
             }
         }
         setDrafts(map);
+        setSourceByAssignment(sources);
     }, []);
 
     const loadItems = useCallback(async () => {
@@ -82,6 +92,13 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
         }));
     };
 
+    const updateSourceGroup = (assignmentId, sourceGroup) => {
+        setSourceByAssignment((prev) => ({
+            ...prev,
+            [assignmentId]: sourceGroup,
+        }));
+    };
+
     const handleSaveAll = async () => {
         setSaving(true);
         setError(null);
@@ -93,6 +110,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                 canvas_criterion_id: String(d.canvas_criterion_id ?? ''),
                 topic_id: d.topic_id ? Number(d.topic_id) : null,
                 difficulty: d.difficulty || 'medium',
+                source_group: sourceByAssignment[d.canvas_assignment_id] ?? 'canvas',
             }));
             const updated = await saveCanvasMappings(courseId, mappings);
             const list = Array.isArray(updated) ? updated : updated?.data ?? [];
@@ -180,7 +198,11 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                         topic_id: null,
                         difficulty: 'medium',
                     };
+                    const itemSource = sourceByAssignment[item.canvas_assignment_id] ?? 'canvas';
                     const hasRubric = Array.isArray(item.criteria) && item.criteria.length > 0;
+                    const isExternalTool =
+                        Array.isArray(item.submission_types) &&
+                        item.submission_types.includes('external_tool');
 
                     return (
                         <article
@@ -214,11 +236,36 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                             item.submission_types.length > 0 &&
                                             ` · ${item.submission_types.join(', ')}`}
                                     </p>
+                                    {isExternalTool && (
+                                        <p className="mt-1 text-xs font-medium text-indigo-700">
+                                            Looks like an external tool (e.g. Klenam)
+                                        </p>
+                                    )}
                                 </div>
 
-                                {/* Whole-item mapping controls */}
+                                {/* Per-item Source select + Whole-item mapping controls */}
                                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                                    <span className="font-medium text-slate-600">Whole item:</span>
+                                    <label className="flex items-center gap-1.5 font-medium text-slate-600">
+                                        <span>Source:</span>
+                                        <select
+                                            aria-label={`Source for ${item.name}`}
+                                            value={itemSource}
+                                            onChange={(e) =>
+                                                updateSourceGroup(
+                                                    item.canvas_assignment_id,
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className="rounded-md border border-slate-300 px-2.5 py-1.5 font-normal text-slate-800"
+                                        >
+                                            <option value="canvas">Canvas</option>
+                                            <option value="klenam">Klenam AI</option>
+                                        </select>
+                                    </label>
+
+                                    <span className="ml-1 font-medium text-slate-600">
+                                        Whole item:
+                                    </span>
                                     <select
                                         value={wholeDraft.topic_id ?? ''}
                                         onChange={(e) =>
