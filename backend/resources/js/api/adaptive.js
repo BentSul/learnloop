@@ -162,3 +162,47 @@ export const fetchClassOverview = (courseId) =>
 
 export const fetchLearnerDetail = (courseId, learnerId) =>
     client.get(`/courses/${courseId}/learners/${learnerId}`).then((r) => r.data);
+
+// ============================================================================
+// §15 Study resources, outside sources, help requests, progress, privacy
+// ============================================================================
+
+export const fetchTopicResources = (topicId) =>
+    client.get(`/topics/${topicId}/resources`).then((r) => r.data);
+
+export const createTopicResource = (topicId, body) =>
+    client.post(`/topics/${topicId}/resources`, body).then((r) => r.data);
+
+export const updateTopicResource = (resourceId, body) =>
+    client.patch(`/resources/${resourceId}`, body).then((r) => r.data);
+
+export const deleteTopicResource = (resourceId) =>
+    client.delete(`/resources/${resourceId}`).then((r) => r.data);
+
+export const fetchLearningSourcesStatus = () =>
+    client.get('/learning-sources').then((r) => r.data);
+
+export const suggestTopicVideos = (topicId) =>
+    client.post(`/topics/${topicId}/resources/suggest-videos`).then((r) => r.data);
+
+export const searchOnlineQuestions = (topicId, params) =>
+    client.get(`/topics/${topicId}/question-search`, { params }).then((r) => r.data);
+
+export const importOnlineQuestions = (topicId, questions) =>
+    client
+        .post(`/topics/${topicId}/question-search/import`, { questions })
+        .then((r) => r.data);
+
+export const fetchCourseHelpRequests = (courseId) =>
+    client.get(`/courses/${courseId}/help-requests`).then((r) => r.data);
+
+export const acknowledgeHelpRequest = (helpRequestId) =>
+    client.post(`/help-requests/${helpRequestId}/acknowledge`).then((r) => r.data);
+
+export const fetchTopicHistory = (topicId) =>
+    client.get(`/me/topics/${topicId}/history`).then((r) => r.data);
+
+export const exportMyData = () => client.get('/me/data-export').then((r) => r.data);
+
+export const deleteMyAccount = (body) =>
+    client.delete('/me/account', { data: body }).then((r) => r.data);

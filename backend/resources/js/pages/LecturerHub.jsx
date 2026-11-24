@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
     addCanvasCourse,
+    fetchCourseHelpRequests,
     fetchLecturerCourseTopics,
     fetchMyCourses,
     fetchTeachingCanvasCourses,
@@ -9,12 +10,14 @@ import {
 import { parseApiError } from '../api/client';
 import LecturerCanvasMapping from '../components/LecturerCanvasMapping';
 import LecturerClassOverview from '../components/LecturerClassOverview';
+import LecturerHelpRequests from '../components/LecturerHelpRequests';
 import LecturerQuestionBank from '../components/LecturerQuestionBank';
 
 const TABS = [
     { key: 'questions', label: 'Topics & Question Bank' },
     { key: 'canvas', label: 'Canvas Mappings' },
     { key: 'overview', label: 'Class Overview' },
+    { key: 'help', label: 'Help requests' },
 ];
 
 export default function LecturerHub() {
@@ -23,6 +26,8 @@ export default function LecturerHub() {
 
     const [courses, setCourses] = useState([]);
     const [topics, setTopics] = useState([]);
+    const [helpRequests, setHelpRequests] = useState([]);
+    const [loadingHelpRequests, setLoadingHelpRequests] = useState(false);
     const [activeTab, setActiveTab] = useState('questions');
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [loadingTopics, setLoadingTopics] = useState(false);
@@ -98,11 +103,25 @@ export default function LecturerHub() {
         }
     }, []);
 
+    const loadHelpRequests = useCallback(async (cid) => {
+        if (!cid) return;
+        setLoadingHelpRequests(true);
+        try {
+            const res = await fetchCourseHelpRequests(cid);
+            setHelpRequests(res?.data ?? (Array.isArray(res) ? res : []));
+        } catch {
+            setHelpRequests([]);
+        } finally {
+            setLoadingHelpRequests(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (courseId) {
             loadTopics(courseId);
+            loadHelpRequests(courseId);
         }
-    }, [courseId, loadTopics]);
+    }, [courseId, loadTopics, loadHelpRequests]);
 
     const handleToggleAddCoursePanel = () => {
         const next = !showAddCoursePanel;
@@ -305,20 +324,37 @@ export default function LecturerHub() {
 
             {/* Section Tabs */}
             <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3">
-                {TABS.map((t) => (
-                    <button
-                        key={t.key}
-                        type="button"
-                        onClick={() => setActiveTab(t.key)}
-                        className={`rounded-md px-3.5 py-2 text-xs font-semibold transition ${
-                            activeTab === t.key
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-white text-slate-600 hover:bg-slate-100'
-                        }`}
-                    >
-                        {t.label}
-                    </button>
-                ))}
+                {TABS.map((t) => {
+                    const isActive = activeTab === t.key;
+                    const count = t.key === 'help' ? helpRequests.length : null;
+                    return (
+                        <button
+                            key={t.key}
+                            type="button"
+                            onClick={() => setActiveTab(t.key)}
+                            className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-semibold transition ${
+                                isActive
+                                    ? 'bg-indigo-700 text-white'
+                                    : 'bg-white text-slate-600 hover:bg-slate-100'
+                            }`}
+                        >
+                            <span>{t.label}</span>
+                            {count !== null && (
+                                <span
+                                    className={`rounded-full px-1.5 py-0.2 text-[11px] font-bold ${
+                                        isActive
+                                            ? 'bg-white/20 text-white'
+                                            : count > 0
+                                              ? 'bg-rose-100 text-rose-800'
+                                              : 'bg-slate-100 text-slate-600'
+                                    }`}
+                                >
+                                    {count}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
 
             {loadingCourses || loadingTopics ? (
@@ -347,6 +383,13 @@ export default function LecturerHub() {
                         />
                     )}
                     {activeTab === 'overview' && <LecturerClassOverview courseId={courseId} />}
+                    {activeTab === 'help' && (
+                        <LecturerHelpRequests
+                            helpRequests={helpRequests}
+                            loading={loadingHelpRequests}
+                            onChanged={() => loadHelpRequests(courseId)}
+                        />
+                    )}
                 </>
             )}
         </div>

@@ -161,6 +161,9 @@ export default function CourseDetail() {
     const hasGoalForTopic = (topicId, type) =>
         goals.some((g) => Number(g.topic?.id) === Number(topicId) && g.goal_type === type);
 
+    const helpGoalForTopic = (topicId) =>
+        goals.find((g) => Number(g.topic?.id) === Number(topicId) && g.goal_type === 'help');
+
     return (
         <div className="space-y-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -266,6 +269,9 @@ export default function CourseDetail() {
                                 topic={topic}
                                 hasMasteryGoal={hasGoalForTopic(topic.topic_id, 'mastery')}
                                 hasHelpRequest={hasGoalForTopic(topic.topic_id, 'help')}
+                                helpAcknowledgedAt={
+                                    helpGoalForTopic(topic.topic_id)?.acknowledged_at ?? null
+                                }
                                 onToggleGoal={handleToggleGoal}
                                 onToggleHelp={handleToggleHelp}
                                 onStartRevisionQuiz={handleStartRevisionQuiz}

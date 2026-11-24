@@ -19,6 +19,7 @@ export default function Layout() {
         ...(!isLecturerOnly ? [{ to: '/recommendations', label: 'Recommendations' }] : []),
         ...(isLecturerOrAdmin ? [{ to: '/lecturer', label: 'Lecturer Tools' }] : []),
         { to: '/canvas', label: 'Canvas' },
+        { to: '/privacy', label: 'Privacy' },
     ];
 
     const handleLogout = async () => {

@@ -1,3 +1,4 @@
+import LearnMoreSection from './LearnMoreSection';
 import { PriorityBadge, StatusBadge } from './StatusBadge';
 
 function formatLocalDateTime(isoString) {
@@ -88,13 +89,19 @@ export default function RecommendationCard({
                             <button
                                 type="button"
                                 onClick={() => onStartRevisionQuiz(rec.topic.id)}
-                                className="rounded-md bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-700"
+                                className="rounded-md bg-indigo-700 px-3 py-1 font-medium text-white hover:bg-indigo-800"
                             >
                                 Start revision quiz
                             </button>
                         )}
                 </div>
             )}
+
+            {/* "Learn more" study resources & YouTube search link (§15) */}
+            <LearnMoreSection
+                resources={rec.resources}
+                findVideosUrl={rec.find_videos_url}
+            />
 
             {/* State transition actions */}
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">

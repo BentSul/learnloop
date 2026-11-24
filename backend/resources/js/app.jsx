@@ -13,6 +13,7 @@ import LecturerHub from './pages/LecturerHub';
 import LecturerLearnerDetail from './pages/LecturerLearnerDetail';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
+import Privacy from './pages/Privacy';
 import QuizPlayer from './pages/QuizPlayer';
 import Recommendations from './pages/Recommendations';
 import Register from './pages/Register';
@@ -36,6 +37,7 @@ function App() {
                             <Route path="/attempts/:attemptId" element={<QuizPlayer />} />
                             <Route path="/recommendations" element={<Recommendations />} />
                             <Route path="/canvas" element={<CanvasConnection />} />
+                            <Route path="/privacy" element={<Privacy />} />
                             <Route path="/lecturer" element={<LecturerHub />} />
                             <Route path="/lecturer/courses/:courseId" element={<LecturerHub />} />
                             <Route

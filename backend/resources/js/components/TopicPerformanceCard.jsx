@@ -1,4 +1,7 @@
+import { useState } from 'react';
+import LearnMoreSection from './LearnMoreSection';
 import { ConfidenceBadge, StatusBadge } from './StatusBadge';
+import TopicProgressModal from './TopicProgressModal';
 
 function formatLocalDate(isoString) {
     if (!isoString) return null;
@@ -20,12 +23,15 @@ export default function TopicPerformanceCard({
     topic,
     hasMasteryGoal = false,
     hasHelpRequest = false,
+    helpAcknowledgedAt = null,
     onToggleGoal,
     onToggleHelp,
     onStartRevisionQuiz,
     busyAction = null,
     readOnly = false,
 }) {
+    const [showProgress, setShowProgress] = useState(false);
+
     const hasEvidence = topic.performance_display !== null && topic.performance_display !== undefined;
     // Spec §7.3: On learner-facing Needs help cards, the difficulty class label is not shown;
     // the confidence reason text is shown instead.
@@ -133,7 +139,13 @@ export default function TopicPerformanceCard({
                 </div>
             )}
 
-            {/* Learner controls: mastery goal, request help, revision quiz */}
+            {/* "Learn more" study resources & YouTube search link (§15) */}
+            <LearnMoreSection
+                resources={topic.resources}
+                findVideosUrl={topic.find_videos_url}
+            />
+
+            {/* Learner controls: mastery goal, request help, see progress, revision quiz */}
             {!readOnly && (
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -165,12 +177,24 @@ export default function TopicPerformanceCard({
                                 {hasHelpRequest ? '✓ Help requested' : 'Request help'}
                             </button>
                         )}
+                        {hasHelpRequest && helpAcknowledgedAt && (
+                            <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                                Your lecturer has seen your request
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setShowProgress(true)}
+                            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                            See progress
+                        </button>
                     </div>
 
                     {onStartRevisionQuiz && (
                         <div className="flex flex-wrap items-center gap-2">
                             {topic.revision_quiz_available === false && (
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs text-slate-600">
                                     No practice questions for this topic yet
                                 </span>
                             )}
@@ -186,7 +210,7 @@ export default function TopicPerformanceCard({
                                         : undefined
                                 }
                                 onClick={() => onStartRevisionQuiz(topic.topic_id)}
-                                className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-md bg-indigo-700 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {busyAction === `revision-${topic.topic_id}`
                                     ? 'Starting quiz…'
@@ -195,6 +219,14 @@ export default function TopicPerformanceCard({
                         </div>
                     )}
                 </div>
+            )}
+
+            {showProgress && (
+                <TopicProgressModal
+                    topicId={topic.topic_id}
+                    topicName={topic.topic_name}
+                    onClose={() => setShowProgress(false)}
+                />
             )}
         </article>
     );

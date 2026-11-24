@@ -4,6 +4,7 @@ import {
     createCourseTopic,
     createTopicQuestion,
     deleteCourseTopic,
+    fetchLearningSourcesStatus,
     fetchTopicQuestions,
     importKlenamQuestions,
     regradeQuestion,
@@ -11,6 +12,8 @@ import {
     updateQuestion,
 } from '../api/adaptive';
 import { parseApiError } from '../api/client';
+import LecturerQuizApiSearch from './LecturerQuizApiSearch';
+import LecturerTopicResources from './LecturerTopicResources';
 
 const DEFAULT_MCQ_OPTIONS = [
     { id: 'a', text: '' },
@@ -80,6 +83,30 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
     const [importFormat, setImportFormat] = useState('json');
     const [importing, setImporting] = useState(false);
     const [importReport, setImportReport] = useState(null);
+
+    // Optional outside sources (§15: video_suggestions, question_search)
+    const [learningSources, setLearningSources] = useState({
+        video_suggestions: false,
+        question_search: false,
+    });
+    const [showQuizApiSearch, setShowQuizApiSearch] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        fetchLearningSourcesStatus()
+            .then((res) => {
+                if (active) {
+                    setLearningSources({
+                        video_suggestions: Boolean(res?.video_suggestions),
+                        question_search: Boolean(res?.question_search),
+                    });
+                }
+            })
+            .catch(() => {});
+        return () => {
+            active = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (topics.length > 0 && !topics.some((t) => Number(t.id) === Number(selectedTopicId))) {
@@ -646,15 +673,31 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                             >
                                 Delete topic
                             </button>
+                            {learningSources.question_search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowQuizApiSearch(true)}
+                                    className="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                                >
+                                    Find questions (QuizAPI)
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={openCreateModal}
-                                className="rounded-md bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                                className="rounded-md bg-indigo-700 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-800"
                             >
                                 + Add Question
                             </button>
                         </div>
                     </div>
+
+                    {/* Study Resources curator for this topic (§15) */}
+                    <LecturerTopicResources
+                        topicId={selectedTopic.id}
+                        topicName={selectedTopic.name ?? selectedTopic.topic_name}
+                        videoSuggestionsEnabled={learningSources.video_suggestions}
+                    />
 
                     {/* Klenam File Import Form (§12 POST /api/topics/{topicId}/questions/import) */}
                     <form
@@ -884,7 +927,7 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                             type="button"
                                             disabled={deletingTopic}
                                             onClick={handleArchiveInsteadOfDelete}
-                                            className="rounded-md bg-amber-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+                                            className="rounded-md bg-amber-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-amber-800 disabled:opacity-60"
                                         >
                                             {deletingTopic ? 'Archiving…' : 'Archive instead'}
                                         </button>
@@ -915,7 +958,7 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                         type="button"
                                         disabled={deletingTopic}
                                         onClick={handleConfirmDeleteTopic}
-                                        className="rounded-md bg-rose-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                                        className="rounded-md bg-rose-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-rose-800 disabled:opacity-60"
                                     >
                                         {deletingTopic ? 'Deleting…' : 'Delete topic'}
                                     </button>
@@ -1259,6 +1302,18 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                         </form>
                     </div>
                 </div>
+            )}
+            {/* Find questions online (QuizAPI) modal (§15) */}
+            {showQuizApiSearch && selectedTopic && (
+                <LecturerQuizApiSearch
+                    topicId={selectedTopic.id}
+                    topicName={selectedTopic.name ?? selectedTopic.topic_name}
+                    onImported={async () => {
+                        await loadQuestions(selectedTopic.id);
+                        onTopicsChanged?.();
+                    }}
+                    onClose={() => setShowQuizApiSearch(false)}
+                />
             )}
         </div>
     );
