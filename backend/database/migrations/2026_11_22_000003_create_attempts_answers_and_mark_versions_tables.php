@@ -14,8 +14,10 @@ return new class extends Migration
     {
         Schema::create('attempts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('learner_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('assessment_id')->constrained()->cascadeOnDelete();
+            // MySQL forbids CASCADE on columns used by a stored generated column (active_key below), so these
+            // foreign keys restrict deletes; services remove dependent rows explicitly where needed.
+            $table->foreignId('learner_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('assessment_id')->constrained()->restrictOnDelete();
             $table->unsignedInteger('attempt_number');
             $table->string('status', 20)->default('in_progress'); // in_progress | submitted | auto_closed | voided
             $table->timestamp('started_at');

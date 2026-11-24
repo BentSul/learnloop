@@ -36,8 +36,8 @@ class CanvasConnectionService
     /** @return array<string, mixed> status after connecting */
     public function connect(User $user, string $token): array
     {
-        if (config('adaptive.canvas.adapter') !== 'token') {
-            throw new CanvasNotConnected('Canvas tokens are not enabled on this server (CANVAS_ADAPTER is not "token").');
+        if (! in_array(config('adaptive.canvas.adapter'), ['token', 'hybrid'], true)) {
+            throw new CanvasNotConnected('Canvas tokens are not enabled on this server (CANVAS_ADAPTER is not "token" or "hybrid").');
         }
 
         $token = trim($token);

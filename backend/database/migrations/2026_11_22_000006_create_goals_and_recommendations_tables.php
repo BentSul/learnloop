@@ -14,8 +14,10 @@ return new class extends Migration
     {
         Schema::create('learner_topic_goals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('learner_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('topic_id')->constrained()->cascadeOnDelete();
+            // MySQL forbids CASCADE on columns used by a stored generated column (active_key below), so these
+            // foreign keys restrict deletes; services remove dependent rows explicitly where needed.
+            $table->foreignId('learner_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('topic_id')->constrained()->restrictOnDelete();
             $table->string('goal_type', 20);              // mastery | help
             $table->timestamp('removed_at')->nullable();  // soft delete keeps history
             $table->timestamps();
@@ -29,8 +31,10 @@ return new class extends Migration
 
         Schema::create('recommendations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('learner_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('topic_id')->constrained()->cascadeOnDelete();
+            // MySQL forbids CASCADE on columns used by a stored generated column (open_key below), so these
+            // foreign keys restrict deletes; services remove dependent rows explicitly where needed.
+            $table->foreignId('learner_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('topic_id')->constrained()->restrictOnDelete();
             $table->string('signature', 191);              // topic|status|sorted reason codes (§10.6)
             $table->string('status_at_creation', 30);
             $table->string('primary_reason', 30);

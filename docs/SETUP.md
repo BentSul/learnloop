@@ -166,6 +166,8 @@ LearnLoop works on phones, tablets and computers. To open it on your phone:
 
 ---
 
+**Want a link that works anywhere, without your laptop?** See [DEPLOY.md](DEPLOY.md) to put LearnLoop online.
+
 ## 7. Use real Canvas (optional)
 
 Demo data is the default. To read real Ashesi Canvas data instead:

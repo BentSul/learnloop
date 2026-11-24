@@ -89,7 +89,15 @@ class TopicService
                 $mapping->delete();
             }
 
-            $topic->delete(); // goals and recommendations for the topic are removed with it
+            // Goals and recommendations (with their events) go with the topic. Removed explicitly:
+            // the database restricts these deletes (see the goals and recommendations migration).
+            $recommendationIds = DB::table('recommendations')->where('topic_id', $topic->id)->pluck('id');
+            DB::table('recommendation_events')->whereIn('recommendation_id', $recommendationIds)->delete();
+            DB::table('recommendations')->whereIn('superseded_by_id', $recommendationIds)->update(['superseded_by_id' => null]);
+            DB::table('recommendations')->whereIn('id', $recommendationIds)->delete();
+            DB::table('learner_topic_goals')->where('topic_id', $topic->id)->delete();
+
+            $topic->delete();
         });
     }
 
