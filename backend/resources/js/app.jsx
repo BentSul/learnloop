@@ -5,6 +5,7 @@ import '../css/app.css';
 import { AuthProvider } from './auth/AuthContext';
 import { GuestOnly, RequireAuth } from './auth/guards';
 import Layout from './components/Layout';
+import CanvasAuthCallback from './pages/CanvasAuthCallback';
 import CanvasConnection from './pages/CanvasConnection';
 import CourseDetail from './pages/CourseDetail';
 import Dashboard from './pages/Dashboard';
@@ -21,6 +22,8 @@ function App() {
         <BrowserRouter>
             <AuthProvider>
                 <Routes>
+                    <Route path="/auth/canvas" element={<CanvasAuthCallback />} />
+
                     <Route element={<GuestOnly />}>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />

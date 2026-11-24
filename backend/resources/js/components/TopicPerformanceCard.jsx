@@ -168,16 +168,31 @@ export default function TopicPerformanceCard({
                     </div>
 
                     {onStartRevisionQuiz && (
-                        <button
-                            type="button"
-                            disabled={busyAction !== null}
-                            onClick={() => onStartRevisionQuiz(topic.topic_id)}
-                            className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-                        >
-                            {busyAction === `revision-${topic.topic_id}`
-                                ? 'Starting quiz…'
-                                : 'Take revision quiz'}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {topic.revision_quiz_available === false && (
+                                <span className="text-xs text-slate-500">
+                                    No practice questions for this topic yet
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                disabled={
+                                    busyAction !== null ||
+                                    topic.revision_quiz_available === false
+                                }
+                                title={
+                                    topic.revision_quiz_available === false
+                                        ? 'No practice questions for this topic yet'
+                                        : undefined
+                                }
+                                onClick={() => onStartRevisionQuiz(topic.topic_id)}
+                                className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {busyAction === `revision-${topic.topic_id}`
+                                    ? 'Starting quiz…'
+                                    : 'Take revision quiz'}
+                            </button>
+                        </div>
                     )}
                 </div>
             )}

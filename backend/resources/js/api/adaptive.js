@@ -1,7 +1,7 @@
 import client from './client';
 
 // ============================================================================
-// §13 Canvas connection (any signed-in user) and lecturer topic management
+// §13–§14 Canvas connection, OAuth connect, adding Canvas courses, and topics
 // ============================================================================
 
 export const fetchCanvasStatus = () => client.get('/me/canvas').then((r) => r.data);
@@ -9,8 +9,17 @@ export const fetchCanvasStatus = () => client.get('/me/canvas').then((r) => r.da
 export const connectCanvasToken = (accessToken) =>
     client.post('/me/canvas', { access_token: accessToken }).then((r) => r.data);
 
+export const startCanvasOAuthConnect = () =>
+    client.post('/me/canvas/oauth').then((r) => r.data);
+
 export const disconnectCanvasToken = () =>
     client.delete('/me/canvas').then((r) => r.data);
+
+export const fetchTeachingCanvasCourses = () =>
+    client.get('/canvas/courses').then((r) => r.data);
+
+export const addCanvasCourse = (body) =>
+    client.post('/canvas/courses', body).then((r) => r.data);
 
 export const createCourseTopic = (courseId, body) =>
     client.post(`/courses/${courseId}/topics`, body).then((r) => r.data);

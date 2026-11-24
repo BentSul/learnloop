@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     connectCanvasToken,
     disconnectCanvasToken,
     fetchCanvasStatus,
+    startCanvasOAuthConnect,
 } from '../api/adaptive';
+import { CANVAS_ERROR_MESSAGES } from '../api/auth';
 import { parseApiError } from '../api/client';
 
 function formatLocalDateTime(isoString) {
@@ -20,18 +23,22 @@ function formatLocalDateTime(isoString) {
 }
 
 /**
- * Canvas Connection page (AGENTS.md §13).
+ * Canvas Connection page (AGENTS.md §13–§14).
  *
- * - Password-type input for the user's personal Canvas access token.
- * - Never stores the token in browser storage and clears the input immediately on submit.
+ * - When oauth_available is true, shows "Connect with Canvas" as the main option and keeps
+ *   the token box as "Use an access token instead (testing)".
+ * - Handles /canvas?canvas_connected=1 and /canvas?canvas_error=<code> redirects.
+ * - Password-type input for the user's personal Canvas access token, cleared immediately on submit.
  * - Shows "Demo data mode" note only when adapter === 'fixture'.
- * - Offers a Disconnect button that forgets the stored token while retaining synced evidence.
  */
 export default function CanvasConnection() {
+    const [searchParams, setSearchParams] = useSearchParams();
+
     const [status, setStatus] = useState(null);
     const [tokenInput, setTokenInput] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [startingOAuth, setStartingOAuth] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
     const [feedback, setFeedback] = useState(null);
     const [error, setError] = useState(null);
@@ -39,7 +46,6 @@ export default function CanvasConnection() {
 
     const loadStatus = useCallback(async () => {
         setLoading(true);
-        setError(null);
         try {
             const res = await fetchCanvasStatus();
             setStatus(res);
@@ -51,8 +57,39 @@ export default function CanvasConnection() {
     }, []);
 
     useEffect(() => {
+        const connectedParam = searchParams.get('canvas_connected');
+        const errorParam = searchParams.get('canvas_error');
+        if (connectedParam === '1') {
+            setFeedback('Canvas connected');
+            setSearchParams({}, { replace: true });
+        } else if (errorParam) {
+            setError(
+                CANVAS_ERROR_MESSAGES[errorParam] ??
+                    'Canvas connection could not be completed.',
+            );
+            setSearchParams({}, { replace: true });
+        }
         loadStatus();
-    }, [loadStatus]);
+    }, [loadStatus, searchParams, setSearchParams]);
+
+    const handleOAuthConnect = async () => {
+        setStartingOAuth(true);
+        setFeedback(null);
+        setError(null);
+        setErrorList([]);
+        try {
+            const res = await startCanvasOAuthConnect();
+            if (res?.authorize_url) {
+                window.location.href = res.authorize_url;
+                return;
+            }
+            setError('Could not start Canvas OAuth connection.');
+        } catch (err) {
+            setError(parseApiError(err).message);
+        } finally {
+            setStartingOAuth(false);
+        }
+    };
 
     const handleConnect = async (e) => {
         e.preventDefault();
@@ -67,7 +104,7 @@ export default function CanvasConnection() {
         try {
             const nextStatus = await connectCanvasToken(submittedToken);
             setStatus(nextStatus);
-            setFeedback('Your Canvas account is now connected.');
+            setFeedback('Canvas connected');
         } catch (err) {
             const data = err?.response?.data;
             const fieldErrs = data?.errors
@@ -101,6 +138,7 @@ export default function CanvasConnection() {
     };
 
     const isFixtureMode = status?.adapter === 'fixture';
+    const oauthAvailable = Boolean(status?.oauth_available);
 
     return (
         <div className="mx-auto max-w-2xl space-y-6">
@@ -176,7 +214,7 @@ export default function CanvasConnection() {
                                     Not connected
                                 </span>
                                 <span className="text-xs text-slate-500">
-                                    No active Canvas token is linked to your account.
+                                    No active Canvas connection is linked to your account.
                                 </span>
                             </div>
                         )}
@@ -195,10 +233,34 @@ export default function CanvasConnection() {
                 </div>
             </section>
 
-            {/* Instructions & Token Form */}
+            {/* Primary OAuth option when oauth_available is true (AGENTS.md §14) */}
+            {oauthAvailable && (
+                <section className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-6 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900">
+                        Connect with Canvas
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-600">
+                        Authorize LearnLoop directly in Canvas without copying an access token.
+                    </p>
+                    <button
+                        type="button"
+                        disabled={startingOAuth}
+                        onClick={handleOAuthConnect}
+                        className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                    >
+                        {startingOAuth ? 'Redirecting to Canvas…' : 'Connect with Canvas'}
+                    </button>
+                </section>
+            )}
+
+            {/* Access token box (main option when OAuth is off; "Use an access token instead (testing)" when OAuth is available) */}
             <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                    {status?.connected ? 'Replace Canvas Access Token' : 'Connect with an Access Token'}
+                    {oauthAvailable
+                        ? 'Use an access token instead (testing)'
+                        : status?.connected
+                          ? 'Replace Canvas Access Token'
+                          : 'Connect with an Access Token'}
                 </h2>
                 <div className="mt-2 rounded-lg bg-slate-50 p-3.5 text-xs text-slate-700">
                     <p className="font-semibold text-slate-900">How to get your Canvas token:</p>

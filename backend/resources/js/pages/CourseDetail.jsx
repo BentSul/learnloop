@@ -196,8 +196,19 @@ export default function CourseDetail() {
             {syncSummary && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-900">
                     <div>
-                        <strong>Canvas sync complete:</strong> {syncSummary.created ?? 0} new/updated,{' '}
-                        {syncSummary.unchanged ?? 0} unchanged, {syncSummary.skipped ?? 0} skipped.
+                        <strong>Canvas sync complete:</strong> {syncSummary.created ?? 0} new/updated ·{' '}
+                        {syncSummary.unchanged ?? 0} unchanged
+                        {syncSummary.skipped_unmapped !== undefined ||
+                        syncSummary.skipped_no_score !== undefined ? (
+                            <>
+                                {' '}
+                                · {syncSummary.skipped_unmapped ?? 0} not linked to a topic yet ·{' '}
+                                {syncSummary.skipped_no_score ?? 0} not graded or released yet
+                            </>
+                        ) : (
+                            <> · {syncSummary.skipped ?? 0} skipped</>
+                        )}
+                        .
                     </div>
                     {(Array.isArray(syncSummary.flagged)
                         ? syncSummary.flagged.length > 0
