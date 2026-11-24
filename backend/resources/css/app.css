@@ -9,3 +9,30 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/*
+ * Touch screens and small screens: make every control at least 40px tall so it is easy to tap.
+ * In the base layer, so a component can still set its own size with a utility class.
+ */
+@layer base {
+    @media (pointer: coarse), (max-width: 767px) {
+        button,
+        select,
+        input:not([type='radio']):not([type='checkbox']):not([type='file']),
+        a[class*='rounded'][class*='px-'] {
+            min-height: 40px;
+        }
+
+        a[class*='rounded'][class*='px-'] {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input[type='radio'],
+        input[type='checkbox'] {
+            width: 1.15rem;
+            height: 1.15rem;
+        }
+    }
+}

@@ -29,35 +29,48 @@ export default function Layout() {
     return (
         <div className="min-h-screen">
             <header className="border-b border-slate-200 bg-white">
-                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-                    <div className="flex items-center gap-6">
-                        <NavLink to="/dashboard" className="text-lg font-bold text-indigo-600">
-                            LearnLoop
-                        </NavLink>
-                        <nav className="flex flex-wrap gap-1" aria-label="Main">
-                            {navItems.map((item) => (
-                                <NavLink key={item.to} to={item.to} className={linkClass}>
-                                    {item.label}
-                                </NavLink>
-                            ))}
-                        </nav>
+                <div className="mx-auto max-w-5xl px-4">
+                    <div className="flex items-center justify-between gap-3 py-3">
+                        <div className="flex min-w-0 items-center gap-6">
+                            <NavLink to="/dashboard" className="shrink-0 text-lg font-bold text-indigo-600">
+                                LearnLoop
+                            </NavLink>
+                            {/* Tablet and desktop: links beside the logo */}
+                            <nav className="hidden flex-wrap gap-1 sm:flex" aria-label="Main">
+                                {navItems.map((item) => (
+                                    <NavLink key={item.to} to={item.to} className={linkClass}>
+                                        {item.label}
+                                    </NavLink>
+                                ))}
+                            </nav>
+                        </div>
+                        <div className="flex min-w-0 items-center gap-2 text-sm sm:gap-3">
+                            <span className="truncate text-slate-700" title={user.name}>
+                                {user.name}
+                            </span>
+                            <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600 sm:inline">
+                                {user.role}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-100"
+                            >
+                                Log out
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                        <span className="text-slate-700">{user.name}</span>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">
-                            {user.role}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                            className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-100"
-                        >
-                            Log out
-                        </button>
-                    </div>
+                    {/* Phones: one row of links under the logo, scrolls sideways if needed */}
+                    <nav className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 sm:hidden" aria-label="Main (mobile)">
+                        {navItems.map((item) => (
+                            <NavLink key={item.to} to={item.to} className={(state) => `${linkClass(state)} shrink-0 whitespace-nowrap`}>
+                                {item.label}
+                            </NavLink>
+                        ))}
+                    </nav>
                 </div>
             </header>
-            <main className="mx-auto max-w-5xl px-4 py-8">
+            <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
                 <Outlet />
             </main>
         </div>
