@@ -17,17 +17,19 @@ class CanvasConnectionService
     {
     }
 
-    /** @return array{connected: bool, adapter: string, canvas_user_id?: string, connected_at?: string} */
+    /** @return array{connected: bool, adapter: string, oauth_available: bool, canvas_user_id?: string, connected_at?: string} */
     public function status(User $user): array
     {
         $connection = CanvasConnection::where('user_id', $user->id)->whereNull('revoked_at')->first();
         $adapter = (string) config('adaptive.canvas.adapter', 'fixture');
+        $oauth = app(CanvasOAuthService::class)->enabled();
 
         return $connection === null
-            ? ['connected' => false, 'adapter' => $adapter]
+            ? ['connected' => false, 'adapter' => $adapter, 'oauth_available' => $oauth]
             : [
                 'connected' => true,
                 'adapter' => $adapter,
+                'oauth_available' => $oauth,
                 'canvas_user_id' => $connection->canvas_user_id,
                 'connected_at' => $connection->connected_at?->toIso8601String(),
             ];

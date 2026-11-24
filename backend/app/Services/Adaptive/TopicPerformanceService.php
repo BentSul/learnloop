@@ -4,6 +4,7 @@ namespace App\Services\Adaptive;
 
 use App\Enums\Adaptive\PerformanceStatus;
 use App\Models\Course;
+use App\Models\Question;
 use App\Models\Topic;
 use App\Models\User;
 use App\Services\Adaptive\Calculation\ConflictPair;
@@ -57,12 +58,21 @@ final class TopicPerformanceService
         $now ??= new DateTimeImmutable();
         $evidence = $this->assembler->forLearnerCourse($learner->id, $course->id);
 
-        return $course->topics()->where('status', 'active')->orderBy('id')->get()
+        $topics = $course->topics()->where('status', 'active')->orderBy('id')->get();
+
+        // Revision quizzes need a minimum number of active objective questions (v0.7 §11.5); the
+        // learner only learns whether one can be made, never the bank size (T2).
+        $minQuestions = (int) config('adaptive.revision_quiz.min_available_questions', 3);
+        $objectiveCounts = Question::whereIn('topic_id', $topics->pluck('id'))->where('status', 'active')
+            ->whereIn('question_type', ['mcq', 'true_false'])
+            ->selectRaw('topic_id, count(*) as n')->groupBy('topic_id')->pluck('n', 'topic_id');
+
+        return $topics
             ->map(fn (Topic $topic) => $this->present(
                 $topic,
                 $this->assessor->assess($evidence->forTopic($topic->id), $now),
                 $evidence->pendingForTopic($topic->id),
-            ))
+            ) + ['revision_quiz_available' => (int) ($objectiveCounts[$topic->id] ?? 0) >= $minQuestions])
             ->values()->all();
     }
 

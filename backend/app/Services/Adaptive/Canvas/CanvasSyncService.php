@@ -121,11 +121,13 @@ final class CanvasSyncService
                     $this->storeVersion($learner, $course, $assignmentId, $submission, [], $now);
                 }
                 $summary->skipped++;
+                $summary->skippedUnmapped++;
                 continue;
             }
 
             if ($submission['score'] === null && ! $submission['excused']) {
                 $summary->skipped++; // missing or ungraded, no score (v0.8 §3.4)
+                $summary->skippedNoScore++;
                 continue;
             }
 

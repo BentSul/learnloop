@@ -224,3 +224,45 @@ the token in the browser and never display it after submitting. Show the `adapte
 
 Canvas failures: 502 `CanvasUnavailable` (Canvas down) and 409 `CanvasNotConnected` (token expired → link to the
 Canvas connection page). Both have a `message` to display.
+
+## 14. API contract: adding courses, Sign in with Canvas, sync details (for Antigravity)
+
+### Lecturers add their Canvas courses (replaces LEARNLOOP_CANVAS_COURSES for everyday use)
+
+| Method and route | Success response |
+|---|---|
+| `GET /api/canvas/courses` | 200, `{"data": [{canvas_course_id, name, course_code, learnloop_course_id}]}`: Canvas courses the user teaches; `learnloop_course_id` is null when not added yet. 409 if Canvas is not connected. |
+| `POST /api/canvas/courses` body `{"canvas_course_id": "12345"}` (admins may add `name`, `code`) | 201, `{id, name, code, canvas_course_id}`. 409 already added; 422 with `message` (not a teacher of it, bad ID). |
+
+Screen: in Lecturer Tools, an **Add a Canvas course** panel listing these courses with an **Add** button (or
+"Already added → Open"). After adding, open the new course's Lecturer Tools. Students see it automatically.
+
+### Sign in with Canvas (OAuth2; off until a Canvas developer key is configured)
+
+| Method and route | Response |
+|---|---|
+| `GET /api/auth/canvas` (public) | `{"enabled": bool}`: show **Sign in with Canvas** on Login/Register only when true |
+| `POST /api/auth/canvas` (public) | `{"authorize_url"}`: set `window.location.href` to it |
+| `POST /api/me/canvas/oauth` (signed in) | `{"authorize_url"}`: **Connect with Canvas** on the Canvas page; `GET /api/me/canvas` now includes `oauth_available` |
+
+Canvas sends the browser back to the server, which redirects to one of:
+- `/auth/canvas#token=<api token>`: new SPA route. Read the token from `window.location.hash`, store it like a
+  normal login token, clear the hash (`history.replaceState`), load `/api/auth/me`, go to `/dashboard`.
+- `/canvas?canvas_connected=1`: show "Canvas connected".
+- `/login?canvas_error=<code>` or `/canvas?canvas_error=<code>`, codes: `denied` (cancelled), `expired` (took
+  too long, try again), `failed` (Canvas refused), `already_linked` (Canvas account belongs to another LearnLoop
+  account), `email_in_use` ("An account with your email exists: log in with your password, then use Connect
+  with Canvas").
+
+When `oauth_available` is true, show **Connect with Canvas** as the main option and keep the token box as
+"Use an access token instead (testing)".
+
+### Sync and topic details
+
+- `POST /api/me/courses/{id}/sync` adds `skipped_unmapped` and `skipped_no_score`. Show e.g. "90 not linked to
+  a topic yet · 4 not graded or released yet" instead of "94 skipped".
+- Each topic in `GET /api/me/courses/{id}/topics` has `revision_quiz_available`. When false, disable **Take
+  revision quiz** with "No practice questions for this topic yet".
+- Canvas Mappings: disable **Whole item** for items whose `points_possible` is null or 0 ("No points in Canvas,
+  so it can't be scored"); when the course has no active topics, show "Add a topic in Topics & Question Bank
+  first" with a link instead of empty dropdowns; show the save result next to **Save all mappings**.

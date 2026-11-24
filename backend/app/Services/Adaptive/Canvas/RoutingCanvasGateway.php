@@ -26,6 +26,11 @@ final class RoutingCanvasGateway implements CanvasGateway
         return $this->for($asCanvasUserId)->course($canvasCourseId, $asCanvasUserId);
     }
 
+    public function teachingCourses(string $asCanvasUserId): array
+    {
+        return $this->for($asCanvasUserId)->teachingCourses($asCanvasUserId);
+    }
+
     public function courseRole(string $canvasCourseId, string $canvasUserId): ?string
     {
         return $this->for($canvasUserId)->courseRole($canvasCourseId, $canvasUserId);

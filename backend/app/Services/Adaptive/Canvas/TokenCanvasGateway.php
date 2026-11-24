@@ -30,6 +30,18 @@ final class TokenCanvasGateway implements CanvasGateway
         ];
     }
 
+    public function teachingCourses(string $asCanvasUserId): array
+    {
+        $courses = $this->client->getList($this->token($asCanvasUserId), '/api/v1/courses',
+            ['enrollment_type' => 'teacher', 'enrollment_state' => 'active']);
+
+        return array_values(array_map(fn (array $c) => [
+            'id' => (string) $c['id'],
+            'name' => (string) ($c['name'] ?? ''),
+            'course_code' => (string) ($c['course_code'] ?? ''),
+        ], array_filter($courses, fn (array $c) => isset($c['id']) && empty($c['access_restricted_by_date']))));
+    }
+
     public function courseRole(string $canvasCourseId, string $canvasUserId): ?string
     {
         $key = "{$canvasCourseId}:{$canvasUserId}";
@@ -133,7 +145,8 @@ final class TokenCanvasGateway implements CanvasGateway
         $connection = CanvasConnection::where('canvas_user_id', $canvasUserId)
             ->where('adapter', 'token')->whereNull('revoked_at')->first();
 
-        return $connection?->access_token ?: null;
+        // Personal tokens are returned as stored; "Sign in with Canvas" tokens are renewed when due.
+        return $connection === null ? null : app(CanvasOAuthService::class)->freshToken($connection);
     }
 
     private function token(string $canvasUserId): string

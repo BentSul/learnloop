@@ -97,7 +97,32 @@ After changing a variable, Railway redeploys; wait for `Starting LearnLoop ...`,
 Real lecturers don't need to be admins: a lecturer who registers and connects their own Canvas token is the
 lecturer of the courses they teach in Canvas.
 
-## 8. Updating the live site
+## 8. Sign in with Canvas (needs Ashesi IT)
+
+Canvas's API policy says apps used by more than their developer must use OAuth instead of asking people to
+paste access tokens. Personal tokens are fine for testing your own account. For classmates and real students,
+ask the Canvas admins (Ashesi IT) for a **developer key** (an "API key", not LTI) with:
+
+- **Redirect URI:** `<APP_URL>/api/canvas/oauth/callback` (e.g. `https://learnloop-production.up.railway.app/api/canvas/oauth/callback`)
+- **Name:** LearnLoop; purpose: student practice and progress tracking from course grades
+- Scopes: none (or read-only scopes for courses, enrollments, assignments, submissions and the user's profile)
+
+They give you a **Client ID** (a number) and a **Client Secret**. Add on Railway:
+
+```
+CANVAS_OAUTH_CLIENT_ID=<client id>
+CANVAS_OAUTH_CLIENT_SECRET=<client secret>
+```
+
+After the redeploy, Login and Register show **Sign in with Canvas** and the Canvas page shows **Connect with
+Canvas**. Keep the secret out of chats and the repository.
+
+## 9. Adding courses
+
+Lecturers (and admins) who connected Canvas can add the courses they teach from **Lecturer Tools → Add a Canvas
+course**; `LEARNLOOP_CANVAS_COURSES` is only needed for courses nobody has added that way.
+
+## 10. Updating the live site
 
 Every push to `main` redeploys automatically (or **Sync fork** if you deployed a fork). Your data stays:
 migrations only add to the database, and the demo data is loaded only once.

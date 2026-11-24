@@ -45,6 +45,14 @@ return [
         'timeout_seconds' => (int) env('CANVAS_TIMEOUT', 15),
         // Course roles are looked up on most requests; cache them to avoid calling Canvas every time.
         'role_cache_minutes' => (int) env('CANVAS_ROLE_CACHE_MINUTES', 10),
+        // "Sign in with Canvas" (OAuth2). Needs a Canvas developer key from the institution's Canvas admins;
+        // stays off until both values are set. The redirect URI registered on the key must be
+        // {APP_URL}/api/canvas/oauth/callback.
+        'oauth' => [
+            'client_id' => env('CANVAS_OAUTH_CLIENT_ID'),
+            'client_secret' => env('CANVAS_OAUTH_CLIENT_SECRET'),
+            'redirect_uri' => env('CANVAS_OAUTH_REDIRECT_URI'),
+        ],
         // Canvas enrolment types treated as the course's lecturer (v0.8 D12). Add 'TaEnrollment' to include TAs.
         'teacher_enrollment_types' => ['TeacherEnrollment'],
     ],

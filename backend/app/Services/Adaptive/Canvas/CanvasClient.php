@@ -3,6 +3,7 @@
 namespace App\Services\Adaptive\Canvas;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -77,6 +78,9 @@ class CanvasClient
                 ->get($url);
         } catch (ConnectionException) {
             throw new CanvasUnavailable('Canvas could not be reached. Try again later.');
+        } catch (RequestException $e) {
+            // Some client configurations throw for 4xx/5xx instead of returning the response.
+            $response = $e->response;
         }
 
         return match (true) {
