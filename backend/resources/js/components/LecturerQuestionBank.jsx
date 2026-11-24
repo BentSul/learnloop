@@ -478,15 +478,7 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                         return (
                             <div
                                 key={t.id}
-                                role="button"
-                                tabIndex={0}
                                 onClick={() => setSelectedTopicId(t.id)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        setSelectedTopicId(t.id);
-                                    }
-                                }}
                                 className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 text-left shadow-sm transition ${
                                     isSelected
                                         ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600'
@@ -497,7 +489,18 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <h3 className="text-base font-semibold text-slate-900">
-                                                {t.name ?? t.topic_name}
+                                                {/* The topic name is the keyboard-accessible way to select the card. */}
+                                                <button
+                                                    type="button"
+                                                    aria-pressed={isSelected}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTopicId(t.id);
+                                                    }}
+                                                    className="text-left hover:underline"
+                                                >
+                                                    {t.name ?? t.topic_name}
+                                                </button>
                                             </h3>
                                             {isArchived && (
                                                 <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
@@ -509,7 +512,7 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                             Topic size: {t.topic_size} marks
                                         </span>
                                     </div>
-                                    <p className="mt-1 text-xs text-slate-500">
+                                    <p className="mt-1 text-xs text-slate-600">
                                         {t.active_questions} active{' '}
                                         {t.active_questions === 1 ? 'question' : 'questions'} in bank
                                     </p>
@@ -681,6 +684,7 @@ export default function LecturerQuestionBank({ courseId, topics, onTopicsChanged
                                 </select>
                                 <input
                                     type="file"
+                                    aria-label="Question file to import (JSON or CSV)"
                                     accept=".json,.csv,application/json,text/csv"
                                     onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
                                     className="text-xs text-slate-600"

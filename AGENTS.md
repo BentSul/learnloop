@@ -266,3 +266,61 @@ When `oauth_available` is true, show **Connect with Canvas** as the main option 
 - Canvas Mappings: disable **Whole item** for items whose `points_possible` is null or 0 ("No points in Canvas,
   so it can't be scored"); when the course has no active topics, show "Add a topic in Topics & Question Bank
   first" with a link instead of empty dropdowns; show the save result next to **Save all mappings**.
+
+## 15. API contract: study resources, outside sources, help requests, progress, privacy (for Antigravity)
+
+### Study resources per topic
+Every topic in `GET /api/me/courses/{id}/topics` now has `resources: [{id, kind, title, url, note}]` (kind: video |
+reading | practice | other) and `find_videos_url` (a YouTube search for the topic). Each recommendation has the same
+two fields (up to 3 resources). Show a **"Learn more"** section on topic cards and recommendation cards: an icon per
+kind, the title as a link, the note underneath, and always a "Find videos on YouTube" link. Links open in a new
+tab with `target="_blank" rel="noopener noreferrer"`.
+
+Lecturer (Topics & Question Bank → selected topic → **Resources**):
+
+| Method and route | Response |
+|---|---|
+| `GET /api/topics/{topicId}/resources` | `{"data": [{id, kind, title, url, note, status, source, position, created_at}]}`; `status` published \| suggested |
+| `POST /api/topics/{topicId}/resources` body `{kind, title, url, note?}` | 201, the resource. 422 `errors` for a bad link (only full http/https web addresses) |
+| `PATCH /api/resources/{id}` any of `{kind, title, url, note, position}`, or `{status: "published"}` to approve a suggestion | 200 |
+| `DELETE /api/resources/{id}` | 204 (also how a suggestion is rejected) |
+
+### Optional outside sources (show these buttons only when switched on)
+`GET /api/learning-sources` → `{video_suggestions: bool, question_search: bool}`.
+
+- **Suggest videos** (`POST /api/topics/{topicId}/resources/suggest-videos`): returns the topic's resources with new
+  YouTube ones as `status: "suggested"`. Show suggestions in a "Suggested videos — review" list with **Approve**
+  (PATCH status published) and **Remove** (DELETE). Students never see suggested ones. 409 with `message` if already
+  searched for this topic in the last 24 hours; 502 with `message` if YouTube refused.
+- **Find questions online** (Question Bank → "Find questions (QuizAPI)"): `GET /api/topics/{topicId}/question-search?tags=php,mysql&difficulty=easy|medium|hard&limit=10`
+  → `{"data": [{external_id, question, type, options: [text], correct: [index], difficulty, explanation, tags, category, already_in_bank}]}`.
+  Show each with its options and the correct one marked, a checkbox (disabled when `already_in_bank`), then
+  `POST /api/topics/{topicId}/question-search/import` body `{"questions": [selected items exactly as received]}` →
+  `{imported: [ids], rejected: [{row, reason}]}`. Show "Questions from QuizAPI.io" as attribution.
+
+### Help requests (lecturer)
+`GET /api/courses/{courseId}/help-requests` → `{"data": [{id, learner: {id, name, email}, topic: {id, name},
+requested_at, acknowledged_at, status, label, performance_display}]}`, oldest first. Add a **Help requests** tab in
+Lecturer Tools (with a count badge) listing them with the student's current result and a **Mark as seen** button
+(`POST /api/help-requests/{id}/acknowledge`). Students: `GET /api/me/goals` items now have `requested_at` and
+`acknowledged_at`; on the topic card show "Your lecturer has seen your request" when `acknowledged_at` is set.
+
+### Progress over time (learner)
+`GET /api/me/topics/{topicId}/history` → `{topic, points: [{date, sources, earned_marks, max_marks, day_display,
+cumulative_display, status, label}]}`. On the topic card add **"See progress"** opening a small line chart of
+`cumulative_display` by `date` (y axis 0–100 %), with dashed lines at 50 % and 80 % (the Getting there and Strong
+thresholds), and a table below listing each day's sources and `day_display` (charts must also have a text version).
+With fewer than two points, show "Not enough history yet" instead of a chart.
+
+### My data (learner, under the user menu or a "Privacy" page)
+- **Download my data**: `GET /api/me/data-export` (send the Bearer token with fetch, then save the JSON as a file).
+- **Delete my account**: a confirmation screen explaining what is deleted (LearnLoop account, quiz attempts, synced
+  Canvas/Klenam results, goals, recommendations; Canvas itself is not touched). `DELETE /api/me/account` body
+  `{confirm: "DELETE MY ACCOUNT", password}` (no password needed after Sign in with Canvas; the API says so with
+  422 `errors.password` otherwise). On 204, clear the token and go to `/login`.
+
+### Accessibility (keep these when building new screens)
+The site passes an automated WCAG 2.1 AA check (axe-core). Keep it that way: every form control needs a visible
+label or `aria-label`; don't put buttons inside clickable cards (make the title a button instead); white text only on
+`-700` or darker coloured backgrounds; headings go h1 → h2 → h3 without skipping; pages use the `<main>` landmark;
+links that open a new tab say so for screen readers (e.g. visually hidden "(opens in a new tab)").

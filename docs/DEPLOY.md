@@ -117,12 +117,33 @@ CANVAS_OAUTH_CLIENT_SECRET=<client secret>
 After the redeploy, Login and Register show **Sign in with Canvas** and the Canvas page shows **Connect with
 Canvas**. Keep the secret out of chats and the repository.
 
-## 9. Adding courses
+## 9. Optional: video suggestions and online questions
+
+Both features stay hidden until their key is added on Railway (learnloop → Variables), then redeploy.
+
+**Questions from QuizAPI.io** (technical multiple-choice: PHP, MySQL, JavaScript, Linux, …; free for
+non-commercial use):
+1. Sign up at **quizapi.io** and open your dashboard's API key section.
+2. Add `QUIZAPI_KEY=<your key>` on Railway.
+Lecturers then get **Find questions** in the question bank: search by tag, preview, tick, import.
+
+**YouTube video suggestions** (Google Cloud, free quota):
+1. Go to **console.cloud.google.com**, create a project (e.g. "LearnLoop").
+2. **APIs & Services → Library →** search "YouTube Data API v3" → **Enable**.
+3. **APIs & Services → Credentials → Create credentials → API key**. Copy it.
+4. Click the key → **API restrictions → Restrict key →** YouTube Data API v3 → Save.
+5. Add `YOUTUBE_API_KEY=<your key>` on Railway.
+Lecturers then get **Suggest videos** per topic; suggestions only reach students after a lecturer approves them.
+The free quota allows only about 100 searches a day, so LearnLoop limits it to one search per topic per day.
+
+Keep both keys out of chats and the repository.
+
+## 10. Adding courses
 
 Lecturers (and admins) who connected Canvas can add the courses they teach from **Lecturer Tools → Add a Canvas
 course**; `LEARNLOOP_CANVAS_COURSES` is only needed for courses nobody has added that way.
 
-## 10. Updating the live site
+## 11. Updating the live site
 
 Every push to `main` redeploys automatically (or **Sync fork** if you deployed a fork). Your data stays:
 migrations only add to the database, and the demo data is loaded only once.

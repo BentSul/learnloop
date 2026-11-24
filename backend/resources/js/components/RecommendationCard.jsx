@@ -38,9 +38,9 @@ export default function RecommendationCard({
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900">
+                        <h2 className="text-base font-semibold text-slate-900">
                             {rec.topic?.name ?? `Topic #${rec.topic?.id}`}
-                        </h3>
+                        </h2>
                         <PriorityBadge priority={rec.priority} />
                         {perf?.status && <StatusBadge status={perf.status} label={perf.label} />}
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs capitalize text-slate-600">
@@ -105,7 +105,7 @@ export default function RecommendationCard({
                                 type="button"
                                 disabled={isBusy}
                                 onClick={() => onAccept(rec.id)}
-                                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                                className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
                             >
                                 Accept
                             </button>

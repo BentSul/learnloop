@@ -314,6 +314,7 @@ export default function LecturerCanvasMapping({ courseId, topics, onOpenTopicsTa
                                         Whole item:
                                     </span>
                                     <select
+                                        aria-label={`Topic for ${item.name} (whole item)`}
                                         value={wholeDraft.topic_id ?? ''}
                                         disabled={!hasPointsPossible}
                                         onChange={(e) =>
@@ -334,6 +335,7 @@ export default function LecturerCanvasMapping({ courseId, topics, onOpenTopicsTa
                                         ))}
                                     </select>
                                     <select
+                                        aria-label={`Difficulty for ${item.name} (whole item)`}
                                         value={wholeDraft.difficulty ?? 'medium'}
                                         disabled={!hasPointsPossible || !wholeDraft.topic_id}
                                         onChange={(e) =>
@@ -389,6 +391,7 @@ export default function LecturerCanvasMapping({ courseId, topics, onOpenTopicsTa
 
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <select
+                                                            aria-label={`Topic for rubric criterion: ${c.description}`}
                                                             value={cDraft.topic_id ?? ''}
                                                             onChange={(e) =>
                                                                 updateDraft(
@@ -412,6 +415,7 @@ export default function LecturerCanvasMapping({ courseId, topics, onOpenTopicsTa
                                                             ))}
                                                         </select>
                                                         <select
+                                                            aria-label={`Difficulty for rubric criterion: ${c.description}`}
                                                             value={cDraft.difficulty ?? 'medium'}
                                                             disabled={!cDraft.topic_id}
                                                             onChange={(e) =>

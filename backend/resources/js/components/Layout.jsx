@@ -28,6 +28,13 @@ export default function Layout() {
 
     return (
         <div className="min-h-screen">
+            {/* Lets keyboard and screen-reader users jump past the menu. */}
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-indigo-700 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+            >
+                Skip to main content
+            </a>
             <header className="border-b border-slate-200 bg-white">
                 <div className="mx-auto max-w-5xl px-4">
                     <div className="flex items-center justify-between gap-3 py-3">
@@ -70,7 +77,7 @@ export default function Layout() {
                     </nav>
                 </div>
             </header>
-            <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+            <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-6 focus:outline-none sm:py-8">
                 <Outlet />
             </main>
         </div>
