@@ -110,7 +110,7 @@ class CanvasSyncServiceTest extends TestCase
 
     public function test_whole_item_and_rubric_criteria_become_evidence(): void
     {
-        $this->assertSame(['created' => 2, 'unchanged' => 0, 'skipped' => 0, 'flagged' => []], $this->sync());
+        $this->assertSame(['created' => 2, 'unchanged' => 0, 'skipped' => 0, 'skipped_unmapped' => 0, 'skipped_no_score' => 0, 'flagged' => []], $this->sync());
 
         $this->assertSame([
             ['c:900:A1', 700, 1000, 'easy'],
@@ -123,7 +123,7 @@ class CanvasSyncServiceTest extends TestCase
     {
         $this->sync();
 
-        $this->assertSame(['created' => 0, 'unchanged' => 2, 'skipped' => 0, 'flagged' => []], $this->sync());
+        $this->assertSame(['created' => 0, 'unchanged' => 2, 'skipped' => 0, 'skipped_unmapped' => 0, 'skipped_no_score' => 0, 'flagged' => []], $this->sync());
         $this->assertSame(2, ExternalResult::count());
     }
 
@@ -169,7 +169,7 @@ class CanvasSyncServiceTest extends TestCase
             ['assignment_id' => 'A1', 'score' => null, 'posted_at' => null],
         ]);
 
-        $this->assertSame(['created' => 0, 'unchanged' => 0, 'skipped' => 2, 'flagged' => []], $this->sync());
+        $this->assertSame(['created' => 0, 'unchanged' => 0, 'skipped' => 2, 'skipped_unmapped' => 1, 'skipped_no_score' => 1, 'flagged' => []], $this->sync());
         $this->assertSame(0, ExternalResult::count());
     }
 

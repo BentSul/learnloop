@@ -20,6 +20,13 @@ interface CanvasGateway
     public function course(string $canvasCourseId, string $asCanvasUserId): ?array;
 
     /**
+     * Courses the user teaches in Canvas (active teacher enrolments), for adding them to LearnLoop.
+     *
+     * @return list<array{id: string, name: string, course_code: string}>
+     */
+    public function teachingCourses(string $asCanvasUserId): array;
+
+    /**
      * Role of a user in a Canvas course: 'teacher', 'student' or null (not enrolled).
      * Replaces course-staff and enrolment data from Role 1 (v0.8 D12).
      */

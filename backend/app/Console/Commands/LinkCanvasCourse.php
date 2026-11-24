@@ -46,7 +46,8 @@ class LinkCanvasCourse extends Command
         }
 
         $course = DB::transaction(function () use ($canvasId, $name) {
-            $course = Course::create(['name' => $name, 'code' => $this->option('code') ?: null]);
+            $code = \App\Services\Adaptive\Canvas\CourseLinkService::uniqueCode($this->option('code'), $canvasId);
+            $course = Course::create(['name' => $name, 'code' => $code]);
             CourseLink::create(['course_id' => $course->id, 'canvas_course_id' => $canvasId]);
 
             return $course;

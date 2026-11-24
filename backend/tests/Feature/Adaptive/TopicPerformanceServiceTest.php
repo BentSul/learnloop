@@ -36,7 +36,7 @@ class TopicPerformanceServiceTest extends TestCase
         $this->assertSame([
             'topic_id', 'topic_name', 'status', 'label', 'earned_marks', 'max_marks', 'performance_display',
             'coverage_band', 'difficulty_class', 'confidence', 'confidence_reasons', 'evidence_age',
-            'last_assessed_at', 'pending_count', 'conflict', 'explanation',
+            'last_assessed_at', 'pending_count', 'conflict', 'explanation', 'revision_quiz_available',
         ], array_keys($lists));
         $this->assertSame('strong', $lists['status']);
         $this->assertSame('Strong performance', $lists['label']);

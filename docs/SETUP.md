@@ -180,7 +180,8 @@ Demo data is the default. To read real Ashesi Canvas data instead:
    then `php artisan config:clear` and restart `php artisan serve`.
 2. The demo logins show **no courses** in this mode (they belong to the demo data). **Register** your own account.
 3. In Canvas: **Account → Settings → + New Access Token**. Copy it and paste it on LearnLoop's **Canvas** page.
-   Treat the token like a password: never paste it into chats, files or commits.
+   Treat the token like a password: never paste it into chats, files or commits. Personal tokens are for
+   testing your own account; for other users Canvas requires "Sign in with Canvas" (see DEPLOY.md §8).
 4. Link a Canvas course (the number is in the course address, `…/courses/12345`):
    ```
    php artisan learnloop:link-course 12345 --name="Web Technologies" --code=CS341

@@ -35,6 +35,19 @@ final class FixtureCanvasGateway implements CanvasGateway
         ];
     }
 
+    public function teachingCourses(string $asCanvasUserId): array
+    {
+        $courses = [];
+        foreach (glob(rtrim($this->directory, '/\\').DIRECTORY_SEPARATOR.'course-*.json') ?: [] as $path) {
+            $canvasCourseId = substr(basename($path, '.json'), strlen('course-'));
+            if ($this->courseRole($canvasCourseId, $asCanvasUserId) === 'teacher') {
+                $courses[] = $this->course($canvasCourseId, $asCanvasUserId);
+            }
+        }
+
+        return array_values(array_filter($courses));
+    }
+
     public function courseRole(string $canvasCourseId, string $canvasUserId): ?string
     {
         foreach ($this->load($canvasCourseId)['enrollments'] ?? [] as $enrollment) {

@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CanvasOAuthController;
 use App\Http\Controllers\Api\Learner\AttemptController;
 use App\Http\Controllers\Api\Learner\CanvasConnectionController;
 use App\Http\Controllers\Api\Learner\CourseController;
 use App\Http\Controllers\Api\Learner\GoalController;
 use App\Http\Controllers\Api\Learner\RecommendationController;
+use App\Http\Controllers\Api\Lecturer\CanvasCourseController;
 use App\Http\Controllers\Api\Lecturer\CanvasMappingController;
 use App\Http\Controllers\Api\Lecturer\ClassOverviewController;
 use App\Http\Controllers\Api\Lecturer\QuestionBankController;
@@ -34,7 +36,14 @@ Route::prefix('auth')->group(function () {
     });
 });
 
+// Sign in / connect with Canvas (OAuth2, needs a Canvas developer key)
+Route::get('auth/canvas', [CanvasOAuthController::class, 'status']);
+Route::post('auth/canvas', [CanvasOAuthController::class, 'startLogin'])->middleware('throttle:10,1');
+Route::get('canvas/oauth/callback', [CanvasOAuthController::class, 'callback'])->middleware('throttle:20,1');
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('me/canvas/oauth', [CanvasOAuthController::class, 'startConnect'])->middleware('throttle:10,1');
+
     // Canvas account link (any signed-in user)
     Route::get('me/canvas', [CanvasConnectionController::class, 'show']);
     Route::post('me/canvas', [CanvasConnectionController::class, 'store'])->middleware('throttle:10,1');
@@ -67,6 +76,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('topics/{topic}/help-requests', [GoalController::class, 'removeHelp']);
         Route::post('topics/{topic}/revision-quiz', [GoalController::class, 'revisionQuiz']);
     });
+
+    // Lecturers add the Canvas courses they teach (§14)
+    Route::get('canvas/courses', [CanvasCourseController::class, 'index']);
+    Route::post('canvas/courses', [CanvasCourseController::class, 'store']);
 
     // Lecturer (§12) — the services check the Canvas teacher role per course
     Route::get('courses/{course}/topics', [QuestionBankController::class, 'topics']);
