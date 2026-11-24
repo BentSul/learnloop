@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchCanvasItems, saveCanvasMappings } from '../api/adaptive';
 import { parseApiError } from '../api/client';
@@ -10,7 +10,7 @@ import { parseApiError } from '../api/client';
  * OR per rubric criterion, never both. All entries of one Canvas item share the item's
  * source_group ('canvas' | 'klenam').
  */
-export default function LecturerCanvasMapping({ courseId, topics }) {
+export default function LecturerCanvasMapping({ courseId, topics, onOpenTopicsTab }) {
     const [items, setItems] = useState([]);
     const [drafts, setDrafts] = useState({});
     const [sourceByAssignment, setSourceByAssignment] = useState({});
@@ -20,7 +20,15 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
     const [errorList, setErrorList] = useState([]);
     const [needsCanvasReconnect, setNeedsCanvasReconnect] = useState(false);
     const [feedback, setFeedback] = useState(null);
+
+    const saveStatusRef = useRef(null);
     const activeTopics = topics.filter((t) => t.status !== 'archived');
+
+    const scrollSaveStatusIntoView = () => {
+        requestAnimationFrame(() => {
+            saveStatusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    };
 
     const hydrateDrafts = useCallback((canvasItems) => {
         const map = {};
@@ -119,6 +127,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
             setFeedback(
                 'Canvas mappings saved. Learners’ evidence will be updated on their next sync.',
             );
+            scrollSaveStatusIntoView();
         } catch (err) {
             const data = err?.response?.data;
             setError(data?.message ?? parseApiError(err).message);
@@ -126,6 +135,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
             if (err?.response?.status === 409) {
                 setNeedsCanvasReconnect(true);
             }
+            scrollSaveStatusIntoView();
         } finally {
             setSaving(false);
         }
@@ -139,57 +149,89 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
         );
     }
 
+    if (activeTopics.length === 0) {
+        return (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-950">
+                <p className="font-semibold">Add a topic in Topics &amp; Question Bank first</p>
+                <p className="mt-1 text-xs text-amber-900">
+                    This course has no active topics to map Canvas items to yet.
+                </p>
+                {onOpenTopicsTab && (
+                    <button
+                        type="button"
+                        onClick={onOpenTopicsTab}
+                        className="mt-3 rounded-md bg-indigo-600 px-3.5 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                    >
+                        Go to Topics &amp; Question Bank →
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-900">
-                        Canvas Assignment & Rubric Topic Mapping
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                        Map each Canvas item either as a whole to one topic, or map individual
-                        rubric criteria to topics. Default difficulty is Medium.
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    disabled={saving}
-                    onClick={handleSaveAll}
-                    className="rounded-md bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-                >
-                    {saving ? 'Saving mappings…' : 'Save all mappings'}
-                </button>
-            </div>
-
-            {feedback && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                    {feedback}
-                </div>
-            )}
-
-            {error && (
-                <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div
+                ref={saveStatusRef}
+                className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+                <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <span>{error}</span>
-                        {needsCanvasReconnect && (
-                            <Link
-                                to="/canvas"
-                                className="ml-2 font-semibold underline hover:text-rose-900"
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            Canvas Assignment &amp; Rubric Topic Mapping
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                            Map each Canvas item either as a whole to one topic, or map individual
+                            rubric criteria to topics. Default difficulty is Medium.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        {feedback && (
+                            <span
+                                role="status"
+                                className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-900"
                             >
-                                Go to Canvas connection →
-                            </Link>
+                                ✓ {feedback}
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            disabled={saving}
+                            onClick={handleSaveAll}
+                            className="rounded-md bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                        >
+                            {saving ? 'Saving mappings…' : 'Save all mappings'}
+                        </button>
+                    </div>
+                </div>
+
+                {error && (
+                    <div
+                        role="alert"
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                    >
+                        <div>
+                            <span>{error}</span>
+                            {needsCanvasReconnect && (
+                                <Link
+                                    to="/canvas"
+                                    className="ml-2 font-semibold underline hover:text-rose-900"
+                                >
+                                    Go to Canvas connection →
+                                </Link>
+                            )}
+                        </div>
+                        {errorList.length > 0 && (
+                            <ul className="mt-1.5 list-inside list-disc text-xs">
+                                {errorList.map((e, i) => (
+                                    <li key={i}>{e}</li>
+                                ))}
+                            </ul>
                         )}
                     </div>
-                    {errorList.length > 0 && (
-                        <ul className="mt-1.5 list-inside list-disc text-xs">
-                            {errorList.map((e, i) => (
-                                <li key={i}>{e}</li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-            )}
+                )}
+            </div>
 
             <div className="space-y-4">
                 {items.map((item) => {
@@ -200,6 +242,11 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                     };
                     const itemSource = sourceByAssignment[item.canvas_assignment_id] ?? 'canvas';
                     const hasRubric = Array.isArray(item.criteria) && item.criteria.length > 0;
+                    const hasPointsPossible =
+                        item.points_possible !== null &&
+                        item.points_possible !== undefined &&
+                        item.points_possible !== '' &&
+                        Number(item.points_possible) > 0;
                     const isExternalTool =
                         Array.isArray(item.submission_types) &&
                         item.submission_types.includes('external_tool');
@@ -216,7 +263,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                             {item.name}
                                         </h3>
                                         <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                                            {item.points_possible} pts
+                                            {item.points_possible ?? 0} pts
                                         </span>
                                         {!wholeDraft.topic_id &&
                                             !(item.criteria ?? []).some(
@@ -268,6 +315,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                     </span>
                                     <select
                                         value={wholeDraft.topic_id ?? ''}
+                                        disabled={!hasPointsPossible}
                                         onChange={(e) =>
                                             updateDraft(
                                                 item.canvas_assignment_id,
@@ -276,7 +324,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                                 e.target.value ? Number(e.target.value) : null,
                                             )
                                         }
-                                        className="rounded-md border border-slate-300 px-2.5 py-1.5"
+                                        className="rounded-md border border-slate-300 px-2.5 py-1.5 disabled:bg-slate-100 disabled:text-slate-400"
                                     >
                                         <option value="">— Not mapped —</option>
                                         {activeTopics.map((t) => (
@@ -287,7 +335,7 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                     </select>
                                     <select
                                         value={wholeDraft.difficulty ?? 'medium'}
-                                        disabled={!wholeDraft.topic_id}
+                                        disabled={!hasPointsPossible || !wholeDraft.topic_id}
                                         onChange={(e) =>
                                             updateDraft(
                                                 item.canvas_assignment_id,
@@ -296,12 +344,17 @@ export default function LecturerCanvasMapping({ courseId, topics }) {
                                                 e.target.value,
                                             )
                                         }
-                                        className="rounded-md border border-slate-300 px-2.5 py-1.5 disabled:bg-slate-100"
+                                        className="rounded-md border border-slate-300 px-2.5 py-1.5 disabled:bg-slate-100 disabled:text-slate-400"
                                     >
                                         <option value="easy">Easy</option>
                                         <option value="medium">Medium</option>
                                         <option value="hard">Hard</option>
                                     </select>
+                                    {!hasPointsPossible && (
+                                        <span className="text-xs text-amber-800">
+                                            No points in Canvas, so it can&apos;t be scored
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 

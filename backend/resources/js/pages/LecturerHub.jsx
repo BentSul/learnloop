@@ -150,7 +150,11 @@ export default function LecturerHub() {
                         />
                     )}
                     {activeTab === 'canvas' && (
-                        <LecturerCanvasMapping courseId={courseId} topics={topics} />
+                        <LecturerCanvasMapping
+                            courseId={courseId}
+                            topics={topics}
+                            onOpenTopicsTab={() => setActiveTab('questions')}
+                        />
                     )}
                     {activeTab === 'overview' && <LecturerClassOverview courseId={courseId} />}
                 </>
