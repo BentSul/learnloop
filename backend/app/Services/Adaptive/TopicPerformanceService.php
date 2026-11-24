@@ -58,7 +58,7 @@ final class TopicPerformanceService
         $now ??= new DateTimeImmutable();
         $evidence = $this->assembler->forLearnerCourse($learner->id, $course->id);
 
-        $topics = $course->topics()->where('status', 'active')->orderBy('id')->get();
+        $topics = $course->topics()->where('status', 'active')->orderBy('id')->with('publishedResources')->get();
 
         // Revision quizzes need a minimum number of active objective questions (v0.7 §11.5); the
         // learner only learns whether one can be made, never the bank size (T2).
@@ -72,7 +72,12 @@ final class TopicPerformanceService
                 $topic,
                 $this->assessor->assess($evidence->forTopic($topic->id), $now),
                 $evidence->pendingForTopic($topic->id),
-            ) + ['revision_quiz_available' => (int) ($objectiveCounts[$topic->id] ?? 0) >= $minQuestions])
+            ) + [
+                'revision_quiz_available' => (int) ($objectiveCounts[$topic->id] ?? 0) >= $minQuestions,
+                // Study material for this topic; find_videos_url always works, even before any are added.
+                'resources' => $topic->publishedResources->map(fn ($r) => $r->toLearnerArray())->values()->all(),
+                'find_videos_url' => self::findVideosUrl($topic->name, $course->name),
+            ])
             ->values()->all();
     }
 
@@ -170,5 +175,11 @@ final class TopicPerformanceService
     private static function marks(int $hundredths): string
     {
         return rtrim(rtrim(number_format($hundredths / 100, 2, '.', ''), '0'), '.');
+    }
+
+    /** A YouTube search for the topic, offered when (or in addition to) curated resources. */
+    public static function findVideosUrl(string $topicName, ?string $courseName = null): string
+    {
+        return 'https://www.youtube.com/results?search_query='.rawurlencode(trim($topicName.' '.($courseName ?? '').' tutorial'));
     }
 }

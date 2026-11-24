@@ -33,7 +33,7 @@ final class RecommendationQuery
             ? [State::Completed->value, State::Obsolete->value, State::Superseded->value]
             : [$section];
 
-        $recs = Recommendation::with('topic')->where('learner_id', $learner->id)->whereIn('state', $states)->get();
+        $recs = Recommendation::with(['topic.publishedResources', 'topic.course'])->where('learner_id', $learner->id)->whereIn('state', $states)->get();
 
         $sorted = in_array($section, ['active', 'accepted', 'postponed'], true)
             ? $this->order($recs)

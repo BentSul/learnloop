@@ -6,12 +6,16 @@ use App\Http\Controllers\Api\Learner\AttemptController;
 use App\Http\Controllers\Api\Learner\CanvasConnectionController;
 use App\Http\Controllers\Api\Learner\CourseController;
 use App\Http\Controllers\Api\Learner\GoalController;
+use App\Http\Controllers\Api\Learner\ProgressAndPrivacyController;
 use App\Http\Controllers\Api\Learner\RecommendationController;
 use App\Http\Controllers\Api\Lecturer\CanvasCourseController;
 use App\Http\Controllers\Api\Lecturer\CanvasMappingController;
+use App\Http\Controllers\Api\Lecturer\HelpRequestController;
+use App\Http\Controllers\Api\Lecturer\LearningSourcesController;
 use App\Http\Controllers\Api\Lecturer\ClassOverviewController;
 use App\Http\Controllers\Api\Lecturer\QuestionBankController;
 use App\Http\Controllers\Api\Lecturer\TopicController;
+use App\Http\Controllers\Api\Lecturer\TopicResourceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -75,6 +79,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('topics/{topic}/help-requests', [GoalController::class, 'addHelp']);
         Route::delete('topics/{topic}/help-requests', [GoalController::class, 'removeHelp']);
         Route::post('topics/{topic}/revision-quiz', [GoalController::class, 'revisionQuiz']);
+        Route::get('topics/{topic}/history', [ProgressAndPrivacyController::class, 'history']);
+
+        // The learner's own data (§15)
+        Route::get('data-export', [ProgressAndPrivacyController::class, 'export'])->middleware('throttle:5,1');
+        Route::delete('account', [ProgressAndPrivacyController::class, 'destroy'])->middleware('throttle:5,1');
     });
 
     // Lecturers add the Canvas courses they teach (§14)
@@ -86,6 +95,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('courses/{course}/topics', [TopicController::class, 'store']);
     Route::patch('topics/{topic}', [TopicController::class, 'update']);
     Route::delete('topics/{topic}', [TopicController::class, 'destroy']);
+
+    // Study resources per topic (§15)
+    Route::get('topics/{topic}/resources', [TopicResourceController::class, 'index']);
+    Route::post('topics/{topic}/resources', [TopicResourceController::class, 'store']);
+    Route::patch('resources/{resource}', [TopicResourceController::class, 'update']);
+    Route::delete('resources/{resource}', [TopicResourceController::class, 'destroy']);
+
+    // Optional outside sources (§15): switch on when their keys are set
+    Route::get('learning-sources', [LearningSourcesController::class, 'status']);
+    Route::post('topics/{topic}/resources/suggest-videos', [LearningSourcesController::class, 'suggestVideos'])->middleware('throttle:10,1');
+    Route::get('topics/{topic}/question-search', [LearningSourcesController::class, 'searchQuestions'])->middleware('throttle:20,1');
+    Route::post('topics/{topic}/question-search/import', [LearningSourcesController::class, 'importQuestions']);
     Route::get('topics/{topic}/questions', [QuestionBankController::class, 'index']);
     Route::post('topics/{topic}/questions', [QuestionBankController::class, 'store']);
     Route::post('topics/{topic}/questions/import', [QuestionBankController::class, 'import']);
@@ -97,5 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('courses/{course}/canvas-mappings', [CanvasMappingController::class, 'save']);
 
     Route::get('courses/{course}/overview', [ClassOverviewController::class, 'show']);
+    Route::get('courses/{course}/help-requests', [HelpRequestController::class, 'index']);
+    Route::post('help-requests/{goal}/acknowledge', [HelpRequestController::class, 'acknowledge']);
     Route::get('courses/{course}/learners/{learner}', [ClassOverviewController::class, 'learner'])->whereNumber('learner');
 });

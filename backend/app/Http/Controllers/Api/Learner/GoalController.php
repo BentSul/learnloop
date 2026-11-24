@@ -29,6 +29,8 @@ class GoalController extends Controller
                 'id' => $g->id,
                 'topic' => ['id' => $g->topic->id, 'name' => $g->topic->name],
                 'goal_type' => $g->goal_type->value,
+                'requested_at' => $g->created_at?->toIso8601String(),
+                'acknowledged_at' => $g->acknowledged_at?->toIso8601String(), // help requests: lecturer has seen it
             ])->values());
     }
 

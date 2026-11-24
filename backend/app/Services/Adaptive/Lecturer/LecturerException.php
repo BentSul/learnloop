@@ -31,6 +31,12 @@ class LecturerException extends QuizException
         return new self($message, 409);
     }
 
+    /** An outside service (YouTube, QuizAPI) could not be reached or refused the request (502). */
+    public static function unavailable(string $message): self
+    {
+        return new self($message, 502);
+    }
+
     public function status(): int
     {
         return $this->httpStatus;

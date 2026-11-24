@@ -27,4 +27,14 @@ class Topic extends Model
     {
         return $this->hasMany(Question::class);
     }
+
+    public function resources(): HasMany
+    {
+        return $this->hasMany(TopicResource::class)->orderBy('position')->orderBy('id');
+    }
+
+    public function publishedResources(): HasMany
+    {
+        return $this->resources()->where('status', 'published');
+    }
 }

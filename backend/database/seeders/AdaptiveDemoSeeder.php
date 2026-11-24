@@ -10,6 +10,7 @@ use App\Models\Course;
 use App\Models\CourseLink;
 use App\Models\Question;
 use App\Models\Topic;
+use App\Models\TopicResource;
 use App\Models\User;
 use App\Services\Adaptive\Canvas\CanvasSyncService;
 use App\Services\Adaptive\Quiz\AttemptService;
@@ -33,6 +34,38 @@ use Random\Randomizer;
 class AdaptiveDemoSeeder extends Seeder
 {
     /** Canvas user IDs used in database/fixtures/canvas. */
+    /**
+     * Study resources for the demo topics: official documentation and freeCodeCamp courses.
+     * [kind, title, url, note]
+     */
+    private const RESOURCES = [
+        'HTML basics' => [
+            ['video', 'Learn HTML – Full Tutorial for Beginners (freeCodeCamp)', 'https://www.youtube.com/watch?v=kUMe1FH4CHE', 'Dave Gray, about 4 hours, in 10 chapters: watch chapters 1–4 first.'],
+            ['reading', 'HTML reference and guides (MDN Web Docs)', 'https://developer.mozilla.org/en-US/docs/Web/HTML', 'Look up any element you are unsure of.'],
+        ],
+        'CSS' => [
+            ['video', 'Learn HTML & CSS – Full Course for Beginners (freeCodeCamp)', 'https://www.youtube.com/watch?v=a_iQb1lnAEQ', 'Project-based; the CSS sections cover selectors, the box model and layout.'],
+            ['reading', 'CSS reference and guides (MDN Web Docs)', 'https://developer.mozilla.org/en-US/docs/Web/CSS', null],
+        ],
+        'JavaScript logic' => [
+            ['video', 'Learn JavaScript – Full Course (freeCodeCamp)', 'https://www.freecodecamp.org/news/learn-javascript-full-course/', 'Video course, about 3.5 hours.'],
+            ['reading', 'JavaScript Guide (MDN Web Docs)', 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide', 'Read "Control flow" and "Expressions and operators".'],
+        ],
+        'Python basics' => [
+            ['video', 'Python programming course for beginners (freeCodeCamp)', 'https://www.freecodecamp.org/news/python-programming-course/', 'Beau Carnes, about 5 hours; runs in the browser.'],
+            ['reading', 'An Informal Introduction to Python (official tutorial)', 'https://docs.python.org/3/tutorial/introduction.html', null],
+        ],
+        'Functions' => [
+            ['reading', 'Defining Functions (official Python tutorial)', 'https://docs.python.org/3/tutorial/controlflow.html#defining-functions', 'Then read "More on Defining Functions" just below it.'],
+        ],
+        'Lists' => [
+            ['reading', 'More on Lists (official Python tutorial)', 'https://docs.python.org/3/tutorial/datastructures.html#more-on-lists', null],
+        ],
+        'Dictionaries' => [
+            ['reading', 'Dictionaries (official Python tutorial)', 'https://docs.python.org/3/tutorial/datastructures.html#dictionaries', null],
+        ],
+    ];
+
     private const CANVAS_IDS = [
         'dr.sarah.chen@learnloop.test' => '601',
         'prof.james.okafor@learnloop.test' => '602',
@@ -77,6 +110,13 @@ class AdaptiveDemoSeeder extends Seeder
                     'description' => $topicData['description'],
                     'learning_outcomes' => $topicData['outcomes'],
                 ]);
+
+                foreach (self::RESOURCES[$topicName] ?? [] as $position => [$kind, $title, $url, $note]) {
+                    TopicResource::create([
+                        'topic_id' => $topic->id, 'kind' => $kind, 'title' => $title, 'url' => $url,
+                        'note' => $note, 'position' => $position + 1, 'added_by' => $lecturers[$code]->id,
+                    ]);
+                }
 
                 $practice = Assessment::create([
                     'course_id' => $course->id,

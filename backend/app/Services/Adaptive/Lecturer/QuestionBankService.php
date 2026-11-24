@@ -42,7 +42,8 @@ final class QuestionBankService
 
         return Question::create($clean + [
             'topic_id' => $topic->id,
-            'source' => $data['source'] ?? 'learnloop',
+            // Where the question came from; anything else sent by a client is treated as LearnLoop's own.
+            'source' => in_array($data['source'] ?? null, ['klenam', 'quizapi'], true) ? $data['source'] : 'learnloop',
             'created_by' => $lecturer->id,
         ]);
     }

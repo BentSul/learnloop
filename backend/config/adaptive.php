@@ -57,4 +57,14 @@ return [
         'teacher_enrollment_types' => ['TeacherEnrollment'],
     ],
 
+    // Optional outside sources for lecturers. Each feature switches on when its key is set.
+    'learning_sources' => [
+        // YouTube Data API v3 key (Google Cloud). Used only when a lecturer asks for video suggestions.
+        'youtube_api_key' => env('YOUTUBE_API_KEY'),
+        // QuizAPI.io key: technical multiple-choice questions (PHP, MySQL, JavaScript, Linux...).
+        'quizapi_key' => env('QUIZAPI_KEY'),
+        'quizapi_url' => env('QUIZAPI_URL', 'https://quizapi.io/api/v1/questions'),
+        'timeout_seconds' => 15,
+    ],
+
 ];

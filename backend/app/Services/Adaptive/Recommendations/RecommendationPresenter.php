@@ -48,6 +48,12 @@ final class RecommendationPresenter
                 'earned_marks' => $basis['earned_marks'] ?? null,
                 'max_marks' => $basis['max_marks'] ?? null,
             ],
+            // Where to start studying: up to three of the lecturer's resources for this topic.
+            'resources' => $rec->topic === null ? [] : $rec->topic->publishedResources->take(3)
+                ->map(fn ($r) => $r->toLearnerArray())->values()->all(),
+            'find_videos_url' => \App\Services\Adaptive\TopicPerformanceService::findVideosUrl(
+                $rec->topic?->name ?? (string) ($basis['topic_name'] ?? ''), $rec->topic?->course?->name,
+            ),
             'reminder_at' => $rec->reminder_at?->toIso8601String(),
             'created_at' => $rec->created_at?->toIso8601String(),
         ];
