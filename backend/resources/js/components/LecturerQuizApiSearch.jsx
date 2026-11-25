@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { importOnlineQuestions, searchOnlineQuestions } from '../api/adaptive';
 import { parseApiError } from '../api/client';
+import { useDialog } from './useDialog';
 
 /**
  * Find questions online (QuizAPI) modal/panel (AGENTS.md §15).
@@ -13,6 +14,7 @@ import { parseApiError } from '../api/client';
  * - Shows "Questions from QuizAPI.io" as attribution.
  */
 export default function LecturerQuizApiSearch({ topicId, topicName, onImported, onClose }) {
+    const dialogRef = useDialog(onClose);
     const [tags, setTags] = useState('');
     const [difficulty, setDifficulty] = useState('');
     const [limit, setLimit] = useState(10);
@@ -78,6 +80,8 @@ export default function LecturerQuizApiSearch({ topicId, topicName, onImported, 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
             <div
                 role="dialog"
+                ref={dialogRef}
+                tabIndex={-1}
                 aria-modal="true"
                 aria-labelledby="quizapi-modal-title"
                 className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"

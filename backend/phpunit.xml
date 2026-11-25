@@ -32,5 +32,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="YOUTUBE_API_KEY" value=""/>
+        <env name="QUIZAPI_KEY" value=""/>
+        <env name="QUIZAPI_URL" value="https://quizapi.io/api/v1/questions"/>
+        <env name="CANVAS_ADAPTER" value="fixture"/>
     </php>
 </phpunit>

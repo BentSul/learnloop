@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchTopicHistory } from '../api/adaptive';
 import { parseApiError } from '../api/client';
 import { StatusBadge } from './StatusBadge';
+import { useDialog } from './useDialog';
 
 /**
  * Learner "See progress" modal (AGENTS.md §15).
@@ -14,6 +15,7 @@ import { StatusBadge } from './StatusBadge';
  * - Always provides a text table below listing each day's sources and day_display.
  */
 export default function TopicProgressModal({ topicId, topicName, onClose }) {
+    const dialogRef = useDialog(onClose);
     const [history, setHistory] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -68,6 +70,8 @@ export default function TopicProgressModal({ topicId, topicName, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
             <div
                 role="dialog"
+                ref={dialogRef}
+                tabIndex={-1}
                 aria-modal="true"
                 aria-labelledby="progress-modal-title"
                 className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
@@ -239,7 +243,12 @@ export default function TopicProgressModal({ topicId, topicName, onClose }) {
 
                         {/* Text version table (always provided for accessibility) */}
                         {points.length > 0 && (
-                            <div className="overflow-x-auto rounded-lg border border-slate-200">
+                            <div
+                                className="overflow-x-auto rounded-lg border border-slate-200"
+                                tabIndex={0}
+                                role="region"
+                                aria-label="Progress by date (scrolls sideways on small screens)"
+                            >
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-slate-200 bg-slate-50 text-slate-700">
                                         <tr>

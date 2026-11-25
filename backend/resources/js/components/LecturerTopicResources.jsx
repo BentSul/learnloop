@@ -7,6 +7,16 @@ import {
     updateTopicResource,
 } from '../api/adaptive';
 import { parseApiError } from '../api/client';
+import { useDialog } from './useDialog';
+
+function DialogBox({ onClose, children, ...props }) {
+    const dialogRef = useDialog(onClose);
+    return (
+        <div ref={dialogRef} tabIndex={-1} {...props}>
+            {children}
+        </div>
+    );
+}
 
 const KIND_LABELS = {
     video: 'Video',
@@ -396,7 +406,8 @@ export default function LecturerTopicResources({
             {/* Add / Edit Resource Modal */}
             {editingResource && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-                    <div
+                    <DialogBox
+                        onClose={() => setEditingResource(null)}
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="resource-modal-title"
@@ -505,7 +516,7 @@ export default function LecturerTopicResources({
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </DialogBox>
                 </div>
             )}
         </section>
